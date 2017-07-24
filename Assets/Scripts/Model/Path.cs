@@ -6,9 +6,10 @@ using System.Collections.Generic;
 
 public class Path
 {
-	public string text;
+	public string text = "";
 	public bool auto = false;
-	public Condition condition;
+	public List<Condition> conditions = new List<Condition>();
+    public List<ParamChanges> changes = new List<ParamChanges>();
 	public State aimState;
 
     public Path(State aimState)

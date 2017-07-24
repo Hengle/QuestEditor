@@ -14,7 +14,7 @@ public class State
 
 	public State()
 	{
-		description = "start state";
+		description = "";
 		position = new Rect(0,0,150,100);
 	}
 }
