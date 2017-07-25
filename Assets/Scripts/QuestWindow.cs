@@ -41,6 +41,7 @@ public class MyWindow : EditorWindow
     Path startPath;
     private State inspectedState;
     private int inspectedPath;
+	private Param deletingParam;
 
     [MenuItem("Window/Quest creator")]
 	static void Init()
@@ -71,14 +72,84 @@ public class MyWindow : EditorWindow
 
     private void DrowParamsWindow()
     {
-        ParamsScrollPosition = GUILayout.BeginScrollView(ParamsScrollPosition);
+		Event evt = Event.current;
+
+		if (evt.button == 1 && evt.type == EventType.MouseDown)
+		{
+			GenericMenu menu = new GenericMenu();
+			menu.AddItem(new GUIContent("Add param"), false, CreateParam);
+			menu.ShowAsContext();
+
+		}
+
+		ParamsScrollPosition = GUILayout.BeginScrollView(ParamsScrollPosition, false, true, GUILayout.Width(position.width-5), GUILayout.Height(position.height-35));
+		GUILayout.BeginVertical();
+		int i = 0;
+		Vector2 rectSize = new Vector2 ((position.width-40)/3, ((position.width-40)/3)/1.5f);
+
         foreach (Param param in game.parameters)
         {
-            //
-        }
+			if(i%3==0)
+			{
+				GUILayout.BeginHorizontal ();
+			}
+			EditorGUI.DrawRect (new Rect(new Rect(i%3*(rectSize.x+5), Mathf.FloorToInt(i/3)*(rectSize.y+5/1.5f), rectSize.x, rectSize.y)), Color.gray/2);
 
+			DoParamWindow (game.parameters[i], rectSize.x+5);
+			//GUILayout.EndArea ();
+			if(i%3==2 || i== game.parameters.Count-1)
+			{
+				GUILayout.EndHorizontal();
+			}
+			i++;
+        }
+		if(deletingParam!=null)
+		{
+			game.parameters.Remove (deletingParam);
+			deletingParam = null;
+		}
+		GUILayout.EndVertical ();
         GUILayout.EndScrollView();
     }
+
+	void DoParamWindow(Param p, float w)
+	{
+		GUILayout.BeginHorizontal (GUILayout.Width(w));
+		GUILayout.BeginVertical (GUILayout.Width(w-5), GUILayout.Height(w/1.5f));
+		GUILayout.Space (5);
+		GUILayout.BeginHorizontal ();
+		p.name = GUILayout.TextField (p.name);
+		if(GUILayout.Button((Texture2D)Resources.Load("Icons/cancel") as Texture2D, GUILayout.Width(15), GUILayout.Height(15)))
+		{
+			deletingParam = p;
+		}
+		GUILayout.EndHorizontal();
+		p.showing = !GUILayout.Toggle (!p.showing, "hidden");
+		if(p.showing)
+		{
+			p.description = GUILayout.TextArea (p.description,GUILayout.Height(45));
+			p.image = (Sprite)EditorGUILayout.ObjectField (p.image, typeof(Sprite), false);
+		}
+		p.activating = GUILayout.Toggle (p.activating, "activating");
+
+		if(p.activating)
+		{
+			List<Chain> chains = new List<Chain> ();
+			foreach(ChainPack pack in game.chainPacks)
+			{
+				chains.AddRange (pack.chains);
+			}
+			p.ucid = EditorGUILayout.Popup (p.ucid, chains.Select (x => x.name).Distinct ().ToArray()); 
+			p.usableChain =  chains[p.ucid];
+		}
+		GUILayout.EndVertical ();
+		GUILayout.EndHorizontal ();
+	}
+
+	void CreateParam()
+	{
+		game.parameters.Add (new Param());
+	}
 
     void DrowPacksWindow ()
 	{
@@ -91,7 +162,7 @@ public class MyWindow : EditorWindow
 
 	void DrawPacksList()
 	{
-		packsScrollPosition = GUILayout.BeginScrollView (packsScrollPosition, false, true, GUILayout.Width(position.width/2+5), GUILayout.Height(position.height-5));
+		packsScrollPosition = GUILayout.BeginScrollView (packsScrollPosition, false, true, GUILayout.Width(position.width/2+5), GUILayout.Height(position.height-35));
 		GUILayout.BeginVertical();
 		ChainPack deletingPack = null;
 
@@ -174,7 +245,7 @@ public class MyWindow : EditorWindow
 			return;
 		}
 
-		chainsScrollPosition = GUILayout.BeginScrollView (chainsScrollPosition, false, true, GUILayout.Width(position.width/2-5), GUILayout.Height(position.height-5));
+		chainsScrollPosition = GUILayout.BeginScrollView (chainsScrollPosition, false, true, GUILayout.Width(position.width/2-5), GUILayout.Height(position.height-20));
 		GUILayout.BeginVertical();
 
 		Chain deletingChain = null;
@@ -243,7 +314,7 @@ public class MyWindow : EditorWindow
 
         Event evt = Event.current;
 
-		if (evt.button == 1)
+		if (evt.button == 1 && evt.type == EventType.MouseDown)
 		{
 
 			lastMousePosition = evt.mousePosition;
@@ -310,6 +381,8 @@ public class MyWindow : EditorWindow
             GUI.backgroundColor = Color.yellow;
             pathAimState = state;
         }
+			
+		state.position = new Rect (Mathf.Clamp(state.position.x, 5 , position.width-5-state.position.width), Mathf.Clamp(state.position.y, 35 , position.height-5-state.position.height), state.position.width, state.position.height);
 
         state.position = GUILayout.Window(currentChain.states.IndexOf(state), state.position, DoStateWindow, ss, GUILayout.Width(150), GUILayout.Height(100));
 
@@ -418,12 +491,44 @@ public class MyWindow : EditorWindow
         GUILayout.EndHorizontal();
         foreach (Condition condition in inspectedState.pathes[inspectedPath].conditions)
         {
-            condition.conditionString = GUILayout.TextArea(condition.conditionString, GUILayout.Height(10));
+			GUILayout.BeginHorizontal ();
+            condition.conditionString = GUILayout.TextArea(condition.conditionString, GUILayout.Height(15));
+			GUI.color = Color.green;
+			if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
+			{
+				condition.parameters.Add (new Param());
+			}
+			GUILayout.EndHorizontal ();
+			Param removingParam=null;
+			int i = 0;
+			foreach(Param p in condition.parameters)
+			{
+				GUILayout.BeginHorizontal ();
+				GUILayout.Space (10);
+				GUILayout.Label (p+""+i+"  ");
+
+
+				GUI.color = Color.red;
+				if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
+				{
+					removingParam = p;
+				}
+				GUI.color = Color.white;
+				GUILayout.EndHorizontal ();
+				i++;
+			}
+			if(removingParam!=null)
+			{
+				condition.parameters.Remove (removingParam);
+			}
+			GUI.color = Color.white;
+
         }
         GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
         foreach (ParamChanges paramChanger in inspectedState.pathes[inspectedPath].changes)
         {
-           // paramChanger.aimParam = EditorGUI.Popup(new Rect(GUILayoutUtility.GetLastRect()), , new string[] { "1","2","3"});
+			//paramChanger.aimParamId = EditorGUILayout.Popup (paramChanger.aimParamId, game.parameters.Select(p=>p.name).Distinct().ToArray());
+			//paramChanger.aimParam = game.parameters [paramChanger.aimParamId];
         }
 
         GUILayout.EndVertical();
