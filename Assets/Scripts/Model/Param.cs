@@ -1,10 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 [System.Serializable]
 public class Param
 {
-	public string name;
+    public delegate void ParamActivation(Chain chain);
+    public event ParamActivation OnParamActivation;
+
+   
+    public string name;
 	public bool showing;
 	public string tags;
 	public string description;
@@ -15,8 +20,39 @@ public class Param
 	public Condition manualUsingCondition = new Condition();
 	public Dictionary<Condition, Chain> autoActivatedChains = new Dictionary<Condition, Chain>();
 	public Vector2 scrollPosition;
+    public float pValue;
+    public float PValue
+    {
+        get
+        {
+            return pValue;
+        }
+        set
+        {
+            if (pValue != value)
+            {
+                pValue = value;
+                CheckConditions();
+            }
+            else
+            {
+                pValue = value;
+            }
+        }
+    }
 
-	public Param()
+    private void CheckConditions()
+    {
+        foreach (KeyValuePair<Condition, Chain> pair in autoActivatedChains)
+        {
+            if (pair.Key.ConditionValue)
+            {
+                OnParamActivation(pair.Value);
+            }
+        }
+    }
+
+    public Param()
 	{
 		name = "new param";
 		showing = false;

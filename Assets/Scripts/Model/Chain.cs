@@ -7,13 +7,25 @@ using System.Collections.Generic;
 public class Chain
 {
 	public string name;
-	public State startState;
+	private State startState;
+    public State StartState
+    {
+        get
+        {
+            return states[0];
+        }
+        set
+        {
+            states.Remove(value);
+            states.Insert(0, value);
+        }
+    }
 	public List<State> states = new List<State>();
 
-	public Chain()
+	public Chain(int guid)
 	{
 		name = "New chain";
-		startState = new State ();
+		startState = new State (guid);
 		states.Add (startState);
 	}
 }
