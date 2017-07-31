@@ -28,7 +28,7 @@ public class ResourceManager : MonoBehaviour {
     public void SetParam(string name, string evaluationString, List<Param> evaluationParameters = null)
     {
         float value = 0;
-        //value = evaluate(evaluationString, evaluationParameters);
+        value = ExpressionSolver.CalculateFloat(evaluationString, evaluationParameters);
         parameters.First(x => x.name == name).PValue = value;
     }
 

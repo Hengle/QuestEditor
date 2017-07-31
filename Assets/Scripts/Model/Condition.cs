@@ -12,7 +12,7 @@ public class Condition
     {
         get
         {
-            //evaluate
+            ExpressionSolver.CalculateBool(conditionString, parameters);
             return true;
         }
     }
