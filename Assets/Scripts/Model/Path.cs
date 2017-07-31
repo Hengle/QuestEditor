@@ -8,7 +8,7 @@ public class Path
 {
 	public string text = "";
 	public bool auto = false;
-	public List<Condition> conditions = new List<Condition>();
+	public Condition condition = new Condition();
     public List<ParamChanges> changes = new List<ParamChanges>();
 	public State aimState;
 
