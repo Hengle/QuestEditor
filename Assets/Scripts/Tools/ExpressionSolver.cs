@@ -20,6 +20,10 @@ public static class ExpressionSolver {
 
     public static bool CalculateBool(string evalString, List<Param> parameters)
     {
+        if (evalString == "")
+        {
+            return true;
+        }
         string eval = evalString;
         for (int i = 0; i < parameters.Count; i++)
         {
@@ -32,12 +36,15 @@ public static class ExpressionSolver {
     private static string ReplaceRandom(string valueEx)
     {
         string result = valueEx;
-        int pos = valueEx.IndexOf("?");
-        if (pos < 0)
+        if (result.Contains("?"))
         {
-            result = valueEx;
+            int pos = valueEx.IndexOf("?");
+            if (pos < 0)
+            {
+                result = valueEx;
+            }
+            result = valueEx.Substring(0, pos) + UnityEngine.Random.Range(0, 100) + valueEx.Substring(pos + 1);
         }
-        result = valueEx.Substring(0, pos) + UnityEngine.Random.Range(0, 100) + valueEx.Substring(pos + 1);
         if (result.Contains("?"))
         {
             return ReplaceRandom(result);

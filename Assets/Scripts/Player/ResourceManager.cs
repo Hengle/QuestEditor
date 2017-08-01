@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class ResourceManager : MonoBehaviour {
 
+    public delegate void ParamChanging(Param p);
+    public event ParamChanging OnParamChanging;
+
     public PathGame pathGame;
     private List<Param> parameters = new List<Param>();
     private ChainPlayer chainPlayer;
@@ -23,13 +26,24 @@ public class ResourceManager : MonoBehaviour {
     public void SetParam(string name, float value)
     {
         parameters.First(x => x.name == name).PValue = value;
+        OnParamChanging.Invoke(parameters.First(x => x.name == name));
     }
 
     public void SetParam(string name, string evaluationString, List<Param> evaluationParameters = null)
     {
+        Debug.Log(name+" "+evaluationString);
+        foreach (Param p in evaluationParameters)
+        {
+            Debug.Log(p.PValue);
+        }
+
         float value = 0;
         value = ExpressionSolver.CalculateFloat(evaluationString, evaluationParameters);
+
+        Debug.Log(value);
+
         parameters.First(x => x.name == name).PValue = value;
+        OnParamChanging.Invoke(parameters.First(x => x.name == name));
     }
 
     public float GetParam(string name)
@@ -37,7 +51,7 @@ public class ResourceManager : MonoBehaviour {
         return parameters.First(x => x.name == name).PValue;
     }
 
-    private void Awake()
+    private void Start()
     {
         if (pathGame)
         {
@@ -49,6 +63,7 @@ public class ResourceManager : MonoBehaviour {
                 {
                     p.OnParamActivation += ChainPlayer.PlayChain;
                 }
+                OnParamChanging.Invoke(p);
             }
             GUIDManager.SetInspectedGame(pathGame);
         }

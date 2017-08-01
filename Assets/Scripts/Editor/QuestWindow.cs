@@ -41,6 +41,7 @@ public class MyWindow : EditorWindow
     bool makingPath = false;
     State pathAimState;
     Path startPath;
+    private State menuState;
     private State inspectedState;
     private int inspectedPath;
 	private Param deletingParam;
@@ -474,6 +475,12 @@ public class MyWindow : EditorWindow
             return;
         }
         BeginWindows ();
+
+        if (makingPath && !makingPathRect.Contains(Event.current.mousePosition))
+        {
+            startPath.aimState = new State(-1);
+        }
+
         foreach (State state in currentChain.states)
 		{
 			DrawStateBox (state);
@@ -501,10 +508,13 @@ public class MyWindow : EditorWindow
 				GenericMenu menu = new GenericMenu();
 				menu.AddItem(new GUIContent("Add state"), false, CreateNewState);
 				menu.ShowAsContext();
-
 		}
-		
-	}
+
+        if (evt.button == 0 && evt.type == EventType.MouseUp)
+        {
+            makingPath = false;
+        }
+    }
 
 	void DrawAditional (){
 
@@ -512,19 +522,11 @@ public class MyWindow : EditorWindow
 		{
 			Handles.BeginGUI();
 			Handles.color = Color.white;
-            //Handles.DrawLine(Vector3.zero, Vector3.one);
-			Handles.DrawAAPolyLine(5, 2, new Vector3[] { makingPathRect.center, Event.current.mousePosition});
-			Handles.EndGUI();
+            DrawNodeCurve(makingPathRect, new Rect(Event.current.mousePosition, Vector2.zero), Color.white);
 
-           
-		}
-   
-
-        if (Event.current.button == 0 && Event.current.type == EventType.MouseUp)
-        {
-            makingPath = false;
+            Handles.EndGUI();
             Repaint();
-        }
+		}
 
         foreach (State state in currentChain.states)
         {
@@ -535,7 +537,7 @@ public class MyWindow : EditorWindow
                 {
                     Handles.BeginGUI();
                     Handles.color = Color.red;
-                    Handles.DrawAAPolyLine(5, 2, new Vector3[] { state.position.position+new Vector2(state.position.width*9/10, 32+i*23), path.aimState.position.center-new Vector2(path.aimState.position.width/2, 0) });
+                    DrawNodeCurve( new Rect(state.position.position + new Vector2(state.position.width + 15f, 7.5f + i * 19), Vector2.zero), path.aimState.position, Color.gray);
                     Handles.EndGUI();
                 }
                 i++;
@@ -570,6 +572,75 @@ public class MyWindow : EditorWindow
 
         state.position = GUILayout.Window(currentChain.states.IndexOf(state), state.position, DoStateWindow, ss, GUILayout.Width(150), GUILayout.Height(100));
 
+        int i = 0;
+
+        Event c = Event.current;
+
+        foreach (Path path in state.pathes)
+        {
+            Rect r = new Rect(state.position.x + state.position.width, state.position.y + 16 * i, 15, 15);
+            GUI.backgroundColor = Color.white;
+            if (inspectedState == state && inspectedPath == state.pathes.IndexOf(path))
+            {
+                GUI.backgroundColor = Color.gray;
+            }
+            GUI.Box(r, new GUIContent((Texture2D)Resources.Load("Icons/play-button") as Texture2D));
+
+            if (r.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown)
+            {
+                makingPath = true;
+                makingPathRect = r;
+                startPath = path;
+            }
+
+            if (r.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseUp)
+            {
+                if (makingPath)
+                {
+                    if (inspectedState != state || inspectedPath != state.pathes.IndexOf(path))
+                    {
+                        inspectedPath = state.pathes.IndexOf(path);
+                        inspectedState = state;
+                        Repaint();
+                    }
+                    else
+                    {
+                        inspectedPath = -1;
+                        Repaint();
+                    }
+                }
+                makingPath = false;
+            }
+
+            /*
+            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(20)))
+            {
+                makingPath = false;
+                if (inspectedState == currentChain.states[windowID] && inspectedPath == i)
+                {
+                    inspectedPath = -1;
+                    inspectedState = null;
+                }
+                else
+                {
+                    inspectedState = currentChain.states[windowID];
+                    inspectedPath = i;
+                }
+            };*/
+
+
+            if (c.type == EventType.MouseDown && c.button == 0)
+            {
+                if (GUILayoutUtility.GetLastRect().Contains(c.mousePosition))
+                {
+                    Debug.Log("!");
+                }
+            }
+
+            i++;
+
+        }
+
         GUI.backgroundColor = Color.white;
     }
 
@@ -578,11 +649,8 @@ public class MyWindow : EditorWindow
         Event evt = Event.current;
 
         if (evt.button == 1 && evt.type == EventType.MouseDown)
-        {
-            
-            inspectedState = currentChain.states[windowID];
-            Debug.Log(currentChain.StartState == inspectedState);
-
+        {     
+            menuState = currentChain.states[windowID];
             lastMousePosition = evt.mousePosition;
             GenericMenu menu = new GenericMenu();
             menu.AddItem(new GUIContent("Remove state"), false, RemoveState);
@@ -603,50 +671,9 @@ public class MyWindow : EditorWindow
  
 
         GUILayout.BeginHorizontal ();
-		GUILayout.BeginVertical (GUILayout.Width(130));
+		GUILayout.BeginVertical ();
 		currentChain.states [windowID].description = GUILayout.TextArea (currentChain.states [windowID].description, GUILayout.Height(45));
 		currentChain.states [windowID].image = (Sprite)EditorGUILayout.ObjectField (currentChain.states [windowID].image, typeof(Sprite), false);
-		GUILayout.EndVertical ();
-
-
-
-		GUILayout.BeginVertical (GUILayout.Width(20));
-
-        /*
-		Rect buttonRect = GUILayoutUtility.GetLastRect (); 
-		if (buttonRect.Contains(Event.current.mousePosition)) 
-		{
-			makingPathRect = buttonRect;
-            makingPath = true;
-		}*/
-
-        int i = 0;
-		foreach(Path path in currentChain.states [windowID].pathes)
-		{
-            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(20)))
-            {
-                if (inspectedState == currentChain.states[windowID] && inspectedPath == i)
-                {
-                    inspectedPath = -1;
-                    inspectedState = null;
-                }
-                else
-                {
-                    inspectedState = currentChain.states[windowID];
-                    inspectedPath = i;
-                }
-            }; 
-            if(GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition) && Event.current.button == 0 && makingPath == false )
-            {
-                   makingPathRect = new Rect(currentChain.states[windowID].position.position+ GUILayoutUtility.GetLastRect().position, GUILayoutUtility.GetLastRect().size);
-                   makingPath = true;
-                   startPath = currentChain.states[windowID].pathes[i];
-            };
-            i++;
-
-        }
-
-       
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();
         GUI.DragWindow();
@@ -654,12 +681,12 @@ public class MyWindow : EditorWindow
 
     private void MakeStart()
     {
-        currentChain.StartState = inspectedState;
+        currentChain.StartState = menuState;
     }
 
     private void RemoveState()
     {
-        if (inspectedState == currentChain.StartState)
+        if (menuState == currentChain.StartState)
         {
             if (currentChain.states.Count == 1)
             {
@@ -669,7 +696,7 @@ public class MyWindow : EditorWindow
             {
                 foreach (State s in currentChain.states)
                 {
-                    if (s!=inspectedState)
+                    if (s!=menuState)
                     {
                         currentChain.StartState = s;
                         break;
@@ -684,7 +711,7 @@ public class MyWindow : EditorWindow
             int i = 0;
             foreach (Path p in s.pathes)
             {
-                if (p.aimState == inspectedState)
+                if (p.aimState == menuState)
                 {
                     removigPathes.Add(s.pathes[i]);
                     inspectedPath = -1;
@@ -694,12 +721,14 @@ public class MyWindow : EditorWindow
             s.pathes.RemoveAll((p)=>removigPathes.Contains(p));
         }
 
-        currentChain.states.Remove(inspectedState);
+        currentChain.states.Remove(menuState);
     }
 
     private void AddPath()
     {
-        inspectedState.pathes.Add(new Path());
+        menuState.pathes.Add(new Path());
+        inspectedPath = menuState.pathes.Count-1;
+        inspectedState = menuState;
     }
 
     private void DrawPathWindow()
@@ -712,7 +741,7 @@ public class MyWindow : EditorWindow
                 ss = inspectedState.pathes[inspectedPath].text.Split(new string[] { "\n" }, System.StringSplitOptions.RemoveEmptyEntries)[0];
                 ss = ss.Substring(0, Mathf.Min(20, ss.Length));
             }
-            GUILayout.Window(42, new Rect(inspectedState.position.x + inspectedState.position.width, inspectedState.position.y + 43 + inspectedPath * 23, 100, 50), DoPathWindow, ss, GUILayout.Width(100), GUILayout.Height(50));
+            GUILayout.Window(42, new Rect(inspectedState.position.x, inspectedState.position.y+ inspectedState.position.height, 100, 50), DoPathWindow, ss, GUILayout.Width(100), GUILayout.Height(50));
         }
     }
 
@@ -904,4 +933,16 @@ public class MyWindow : EditorWindow
 			path.changes.Remove (removingChanger);
 		}
 	}
+
+    void DrawNodeCurve(Rect start, Rect end, Color c)
+    {
+        Vector3 startPos = new Vector3(start.x + start.width, start.y + start.height / 2, 0);
+        Vector3 endPos = new Vector3(end.x, end.y + end.height / 2, 0);
+        Vector3 startTan = startPos + Vector3.right * 150;
+        Vector3 endTan = endPos + Vector3.left * 150;
+        Color shadowCol = new Color(0, 0, 0, 0.06f);
+        for (int i = 0; i < 2; i++) // Draw a shadow
+        Handles.DrawBezier(startPos, endPos, startTan, endTan, shadowCol, null, (i + 1) * 7);
+        Handles.DrawBezier(startPos, endPos, startTan, endTan, c, null, 3);
+    }
 }
