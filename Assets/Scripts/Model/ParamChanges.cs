@@ -4,11 +4,42 @@
 public class ParamChanges
 {
     public Param aimParam;
-    public List<Param> parameters = new List<Param>();
+
+	public List<Param> parameters
+	{
+		get
+		{
+			List<Param> par = new List<Param> ();
+			foreach(int pg in ParametersGUID)
+			{
+				par.Add (GUIDManager.GetItemByGuid(pg));
+			}
+			return par;
+		}
+		set
+		{
+			ParametersGUID = new List<int> ();
+			foreach(Param p in value)
+			{
+				ParametersGUID.Add (p.paramGUID);
+			}
+		}
+	}
+
+	private List<int> ParametersGUID = new List<int>();
     public string changeString = "";
 
 	public ParamChanges(Param aimParam)
 	{
 		this.aimParam = aimParam;
+	}
+
+	public void RemoveParam(Param p)
+	{
+		ParametersGUID.Remove (p.paramGUID);
+	}
+	public void AddParam(Param p)
+	{
+		ParametersGUID.Add(p.paramGUID);
 	}
 }

@@ -25,7 +25,7 @@ public class ItemButton : MonoBehaviour {
     {
         counter.text = parameter.PValue.ToString();
 
-        GetComponent<Button>().interactable = parameter.manualActivationWithConditions && ExpressionSolver.CalculateBool(parameter.manualUsingCondition.conditionString, parameter.manualUsingCondition.parameters);
+        GetComponent<Button>().interactable = parameter.manualActivationWithConditions && ExpressionSolver.CalculateBool(parameter.manualUsingCondition.conditionString, parameter.manualUsingCondition.Parameters);
 
 
         if (parameter.PValue <= 0)

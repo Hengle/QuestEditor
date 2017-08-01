@@ -193,7 +193,7 @@ public class MyWindow : EditorWindow
 				GUI.color = Color.yellow;
 				if (GUILayout.Button ((Texture2D)Resources.Load ("Icons/add") as Texture2D, GUILayout.Width (20), GUILayout.Height (20))) {
 					if (game.parameters.Count > 0) {
-						p.manualUsingCondition.parameters.Add (game.parameters [0]);
+						p.manualUsingCondition.AddParam (game.parameters [0]);
 					}
 				}
 
@@ -202,39 +202,40 @@ public class MyWindow : EditorWindow
 
 				Param removingParam = null;
 
-				for (int i = 0; i < p.manualUsingCondition.parameters.Count; i++) {
+				for (int i = 0; i < p.manualUsingCondition.Parameters.Count; i++) {
 					EditorGUILayout.BeginHorizontal ();
 					EditorGUILayout.LabelField ("[p" + i + "]", GUILayout.Width (35));
 
-					if (!game.parameters.Contains (p.manualUsingCondition.parameters [i])) {
+					if (!game.parameters.Contains (p.manualUsingCondition.Parameters [i])) {
 						if (game.parameters.Count > 0) {
-							p.manualUsingCondition.parameters [i] = game.parameters [0];
+							p.manualUsingCondition.Parameters [i] = game.parameters [0];
 						} else {
-							removingParam = p.manualUsingCondition.parameters [i];
+							removingParam = p.manualUsingCondition.Parameters [i];
 							continue;
 						}
 					}
-					p.manualUsingCondition.parameters [i] = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (p.manualUsingCondition.parameters [i]), game.parameters.Select (x => x.name).ToArray ())]; 
+					p.manualUsingCondition.Parameters [i] = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (p.manualUsingCondition.Parameters [i]), game.parameters.Select (x => x.name).ToArray ())]; 
 
 
 					GUI.color = Color.red;
 					if (GUILayout.Button ("", GUILayout.Height (15), GUILayout.Width (15))) {
-						removingParam = p.manualUsingCondition.parameters [i];
+						removingParam = p.manualUsingCondition.Parameters [i];
 					}
 					GUI.color = Color.white;
 					EditorGUILayout.EndHorizontal ();
 				}
 
 				if (removingParam != null) {
-					p.manualUsingCondition.parameters.Remove (removingParam);
+					p.manualUsingCondition.RemoveParam (removingParam);
 				}
 			}
 		}
 		GUI.color = Color.green;
 		if (GUILayout.Button ("add auto action")) {
+
 			if(chains.Count>0)
 			{
-				p.autoActivatedChains.Add (new Condition(), chains[0]);
+				p.AddAutoActivatedChain (new Condition(), chains[0]);
 			}
 		};
 
@@ -275,7 +276,7 @@ public class MyWindow : EditorWindow
 			{
 				if(game.parameters.Count>0)
 				{
-					c.parameters.Add(game.parameters[0]);
+					c.AddParam(game.parameters[0]);
 				}
 			}
 
@@ -283,28 +284,28 @@ public class MyWindow : EditorWindow
 			GUI.color = Color.white;
 			EditorGUILayout.EndHorizontal ();
 
-			for(int j = 0;j<c.parameters.Count;j++)
+			for(int j = 0;j<c.Parameters.Count;j++)
 			{
 				EditorGUILayout.BeginHorizontal ();
 				EditorGUILayout.LabelField ("[p"+j+"]", GUILayout.Width(35));
 
-				if(!game.parameters.Contains(c.parameters[j]))
+				if(!game.parameters.Contains(c.Parameters[j]))
 				{
 					if(game.parameters.Count>0){
-						c.parameters [j] = game.parameters [0];
+						c.Parameters [j] = game.parameters [0];
 					}
 					else{
-						removingParam = c.parameters[j];
+						removingParam = c.Parameters[j];
 						continue;
 					}
 				}
-				c.parameters[j] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(c.parameters[j]), game.parameters.Select (x => x.name).ToArray())]; 
+				c.Parameters[j] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(c.Parameters[j]), game.parameters.Select (x => x.name).ToArray())]; 
 
 
 				GUI.color = Color.red;
 				if(GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
 				{
-					removingParam = c.parameters[i];
+					removingParam = c.Parameters[i];
 				}
 				GUI.color = Color.white;
 				EditorGUILayout.EndHorizontal ();
@@ -312,12 +313,12 @@ public class MyWindow : EditorWindow
 
 			if(removingParam!=null)
 			{
-				c.parameters.Remove (removingParam);
+				c.RemoveParam (removingParam);
 			}
 		}
 		if(removingCondition!=null)
 		{
-			p.autoActivatedChains.Remove (removingCondition);
+			p.RemoveAutoActivatedChain  (removingCondition);
 		}
 		GUI.color = Color.white;
 		GUILayout.EndVertical ();
@@ -327,7 +328,7 @@ public class MyWindow : EditorWindow
 
 	void CreateParam()
 	{
-		game.parameters.Add (new Param());
+		game.parameters.Add (new Param(GUIDManager.GetItemGUID()));
 	}
 
     void DrowPacksWindow ()
@@ -432,7 +433,7 @@ public class MyWindow : EditorWindow
 		GUI.color = Color.green;
 		if(GUILayout.Button("new chain", GUILayout.Width(position.width/2-30), GUILayout.Height(15)))
 		{
-			currentPack.chains.Insert(0, new Chain(GUIDManager.GetGUID()));
+			currentPack.chains.Insert(0, new Chain(GUIDManager.GetChainGUID(), GUIDManager.GetStateGUID()));
 		}
 		GUI.color = Color.white;
 
@@ -784,7 +785,7 @@ public class MyWindow : EditorWindow
 
     State CreateState()
 	{
-		State newState = new State(GUIDManager.GetGUID());
+		State newState = new State(GUIDManager.GetStateGUID());
 		newState.position = new Rect (lastMousePosition.x - newState.position.width/2, lastMousePosition.y - newState.position.height/2, newState.position.width, newState.position.height);
 		currentChain.states.Add (newState);
         return newState;
@@ -805,9 +806,10 @@ public class MyWindow : EditorWindow
 		GUI.color = Color.yellow;
 		if (GUILayout.Button((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
 		{
+			Debug.Log (game.parameters.Count);
 			if(game.parameters.Count>0)
 			{
-				path.condition.parameters.Add(game.parameters[0]);
+				path.condition.AddParam(game.parameters[0]);
 			}
 		}
 
@@ -816,28 +818,28 @@ public class MyWindow : EditorWindow
 
 		Param removingParam = null;
 
-		for(int i = 0;i<path.condition.parameters.Count;i++)
+		for(int i = 0;i<path.condition.Parameters.Count;i++)
 		{
 			EditorGUILayout.BeginHorizontal ();
 			EditorGUILayout.LabelField ("[p"+i+"]", GUILayout.Width(35));
 
-			if(!game.parameters.Contains(path.condition.parameters[i]))
+			if(!game.parameters.Contains(path.condition.Parameters[i]))
 			{
 				if(game.parameters.Count>0){
-					path.condition.parameters [i] = game.parameters [0];
+					path.condition.Parameters [i] = game.parameters [0];
 				}
 				else{
-					removingParam = path.condition.parameters[i];
+					removingParam = path.condition.Parameters[i];
 					continue;
 				}
 			}
-			path.condition.parameters[i] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(path.condition.parameters[i]), game.parameters.Select (x => x.name).ToArray())]; 
+			path.condition.Parameters[i] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(path.condition.Parameters[i]), game.parameters.Select (x => x.name).ToArray())]; 
 
 
 			GUI.color = Color.red;
 			if(GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
 			{
-				removingParam = path.condition.parameters[i];
+				removingParam = path.condition.Parameters[i];
 			}
 			GUI.color = Color.white;
 			EditorGUILayout.EndHorizontal ();
@@ -845,7 +847,7 @@ public class MyWindow : EditorWindow
 
 		if(removingParam!=null)
 		{
-			path.condition.parameters.Remove (removingParam);
+			path.condition.RemoveParam (removingParam);
 		}
 
 	}
@@ -890,7 +892,7 @@ public class MyWindow : EditorWindow
 			GUI.color = Color.yellow;
 			if (GUILayout.Button ("", GUILayout.Height (15), GUILayout.Width (15))) {
 				if (game.parameters.Count > 0) {
-					path.changes[i].parameters.Add (game.parameters [0]);
+					path.changes[i].AddParam (game.parameters [0]);
 				}
 			}
 			GUI.color = Color.white;
@@ -922,7 +924,7 @@ public class MyWindow : EditorWindow
 			}
 
 			if (removingParam != null) {
-				path.changes[i].parameters.Remove (removingParam);
+				path.changes[i].RemoveParam (removingParam);
 			}
 
 			GUI.color = Color.white;

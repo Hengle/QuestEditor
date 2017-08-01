@@ -10,7 +10,7 @@ public class GUIDManager
         inspectedgame = g;
     }
 
-    public static int GetGUID()
+    public static int GetStateGUID()
     {
         int r = UnityEngine.Random.Range(0,999999);
         if (inspectedgame)
@@ -23,7 +23,7 @@ public class GUIDManager
                     {
                         if (s.stateGUID == r)
                         {
-                            return GetGUID();
+                            return GetStateGUID();
                         }
                     }
                 }
@@ -49,4 +49,67 @@ public class GUIDManager
         }
         return null;
     }
+
+	public static int GetChainGUID()
+	{
+		int r = UnityEngine.Random.Range(0,999999);
+		if (inspectedgame)
+		{
+			foreach (ChainPack p in inspectedgame.chainPacks)
+			{
+				foreach (Chain c in p.chains)
+				{
+
+					if (c.ChainGuid == r)
+						{
+						return GetChainGUID();
+						}
+					}
+				}
+			}
+		return r;
+	}
+
+	public static Chain GetChainByGuid(int aimChainGuid)
+	{
+		foreach (ChainPack p in inspectedgame.chainPacks)
+		{
+			foreach (Chain c in p.chains)
+			{
+				if (c.ChainGuid == aimChainGuid)
+					{
+						return c;
+					}
+			}
+		}
+		return null;
+	}
+
+	public static int GetItemGUID()
+	{
+		int r = UnityEngine.Random.Range(0,999999);
+		if (inspectedgame)
+		{
+			foreach (Param p in inspectedgame.parameters)
+			{
+						if (p.paramGUID == r)
+						{
+							return GetItemGUID();
+						}
+			}
+		}
+		return r;
+	}
+
+	public static Param GetItemByGuid(int aimParamGuid)
+	{
+		foreach (Param p in inspectedgame.parameters)
+		{
+			if (p.paramGUID == aimParamGuid)
+					{
+						return p;
+					}
+		}
+		return null;
+	}
 }

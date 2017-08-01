@@ -8,6 +8,8 @@ public class Chain
 {
 	public string name;
 	private State startState;
+	public int ChainGuid;
+
     public State StartState
     {
         get
@@ -22,10 +24,11 @@ public class Chain
     }
 	public List<State> states = new List<State>();
 
-	public Chain(int guid)
+	public Chain(int cGuid, int sGuid)
 	{
+		ChainGuid = cGuid;
 		name = "New chain";
-		startState = new State (guid);
+		startState = new State (cGuid);
 		states.Add (startState);
 	}
 }
