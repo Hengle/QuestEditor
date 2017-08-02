@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class GUIDManager
 {
@@ -9,6 +10,8 @@ public class GUIDManager
     {
         inspectedgame = g;
     }
+
+   
 
     public static int GetStateGUID()
     {

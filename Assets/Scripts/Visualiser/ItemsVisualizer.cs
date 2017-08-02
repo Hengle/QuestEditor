@@ -17,8 +17,6 @@ public class ItemsVisualizer : MonoBehaviour {
 
     private void ChangingParam(Param p)
     {
-
-
         if (p.tags.Length>0)
         {
             foreach (string s in p.tags.Split(','))

@@ -31,16 +31,10 @@ public class ResourceManager : MonoBehaviour {
 
     public void SetParam(string name, string evaluationString, List<Param> evaluationParameters = null)
     {
-        Debug.Log(name+" "+evaluationString);
-        foreach (Param p in evaluationParameters)
-        {
-            Debug.Log(p.PValue);
-        }
 
         float value = 0;
         value = ExpressionSolver.CalculateFloat(evaluationString, evaluationParameters);
 
-        Debug.Log(value);
 
         parameters.First(x => x.name == name).PValue = value;
         OnParamChanging.Invoke(parameters.First(x => x.name == name));

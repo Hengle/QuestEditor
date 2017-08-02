@@ -26,7 +26,12 @@ public class ParamChanges
 		}
 	}
 
-	private List<int> ParametersGUID = new List<int>();
+    public void setParam(Param p, int index)
+    {
+        ParametersGUID[index] = p.paramGUID;
+    }
+
+	public List<int> ParametersGUID = new List<int>();
     public string changeString = "";
 
 	public ParamChanges(Param aimParam)

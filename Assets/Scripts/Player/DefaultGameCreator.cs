@@ -14,6 +14,7 @@ public class DefaultGameCreator : MonoBehaviour {
             pp.Add(cp);
         }
         pp.Shuffle();
+        GUIDManager.SetInspectedGame(game);
         FindObjectOfType<ChainPlayer>().PlayChain(pp.GetChain());
         GUIDManager.SetInspectedGame(game);
     }

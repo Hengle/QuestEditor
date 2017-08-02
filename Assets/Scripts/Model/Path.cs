@@ -11,7 +11,7 @@ public class Path
     public bool waitInput = false;
 	public Condition condition = new Condition();
     public List<ParamChanges> changes = new List<ParamChanges>();
-    private int aimStateGuid;
+    public int aimStateGuid;
     public Sprite pathSprite;
 	public State aimState
     {

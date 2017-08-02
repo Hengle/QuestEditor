@@ -26,15 +26,14 @@ public class Condition
 			}
 		}
 	}
-	private List<int> ParametersGUID = new List<int>();
+	public List<int> ParametersGUID = new List<int>();
 
     public string conditionString = "";
     public bool ConditionValue
     {
         get
         {
-            ExpressionSolver.CalculateBool(conditionString, Parameters);
-            return true;
+            return ExpressionSolver.CalculateBool(conditionString, Parameters); ;
         }
     }
 
@@ -47,6 +46,11 @@ public class Condition
 	{
 		ParametersGUID.Add(p.paramGUID);
 	}
+
+    public void setParam(int j, Param param)
+    {
+        ParametersGUID[j] = param.paramGUID;
+    }
 }
 
 

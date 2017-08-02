@@ -5,8 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 
-
-public class MyWindow : EditorWindow
+public class QuestWindow : EditorWindow
 {
     private delegate void StateDel(State state);
 
@@ -27,7 +26,7 @@ public class MyWindow : EditorWindow
 
     public Vector2 ParamsScrollPosition { get; private set; }
 
-    public PathGame game;
+    public static PathGame game;
 	Vector2 lastMousePosition;
 	Chain currentChain;
 	ChainPack currentPack;
@@ -50,11 +49,19 @@ public class MyWindow : EditorWindow
     [MenuItem("Window/Quest creator")]
 	static void Init()
 	{
-		MyWindow window = (MyWindow)EditorWindow.GetWindow(typeof(MyWindow), false,  "Quest creator", true); 
+		QuestWindow window = (QuestWindow)EditorWindow.GetWindow(typeof(QuestWindow), false,  "Quest creator", true);
+        window.minSize = new Vector2(1130, 400);
 		window.Show();
 	}
 
-	void OnGUI()
+    public static void Init(PathGame editedGame = null)
+    {
+        game = editedGame;
+        GUIDManager.SetInspectedGame(game);
+        Init();
+    }
+
+    void OnGUI()
 	{
         GUILayout.BeginVertical ();
 
@@ -68,10 +75,7 @@ public class MyWindow : EditorWindow
 				AssetDatabase.SaveAssets ();
 			}
 			game = g;
-
-
             GUIDManager.SetInspectedGame(game);
-            
         }
 
 		if (game) {
@@ -208,13 +212,14 @@ public class MyWindow : EditorWindow
 
 					if (!game.parameters.Contains (p.manualUsingCondition.Parameters [i])) {
 						if (game.parameters.Count > 0) {
-							p.manualUsingCondition.Parameters [i] = game.parameters [0];
+							p.manualUsingCondition.setParam(i,game.parameters [0]);
 						} else {
 							removingParam = p.manualUsingCondition.Parameters [i];
 							continue;
 						}
 					}
-					p.manualUsingCondition.Parameters [i] = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (p.manualUsingCondition.Parameters [i]), game.parameters.Select (x => x.name).ToArray ())]; 
+
+					p.manualUsingCondition.setParam(i, game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (p.manualUsingCondition.Parameters [i]), game.parameters.Select (x => x.name).ToArray ())]); 
 
 
 					GUI.color = Color.red;
@@ -239,7 +244,7 @@ public class MyWindow : EditorWindow
 			}
 		};
 
-		Condition removingCondition = null;
+		int removingCondition = -1;
 
 		for(int i = 0; i< p.autoActivatedChains.Count; i++)
 		{
@@ -251,18 +256,21 @@ public class MyWindow : EditorWindow
 					p.autoActivatedChains[pair] = chains [0];
 				} else 
 				{
-					removingCondition = p.autoActivatedChains.ElementAt(i).Key;
+					removingCondition = i;
 					continue;
 				}
 			}
 			GUILayout.BeginHorizontal ();
 			Condition c = p.autoActivatedChains.ElementAt (i).Key;
 			GUI.color = Color.white;
-			p.autoActivatedChains[c] = chains [EditorGUILayout.Popup (chains.IndexOf (p.autoActivatedChains[c]), chains.Select (x => x.name).ToArray ())]; 
+
+            int v = EditorGUILayout.Popup(chains.IndexOf(p.autoActivatedChains[c]), chains.Select(x => x.name).ToArray());
+            p.SetAutoActivatedChain(i, chains[v]); 
+
 			GUI.color = Color.red;
 			if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
 			{
-				removingCondition = p.autoActivatedChains.ElementAt(i).Key;
+				removingCondition = i;
 			}
 			GUILayout.EndHorizontal ();
 
@@ -299,8 +307,16 @@ public class MyWindow : EditorWindow
 						continue;
 					}
 				}
-				c.Parameters[j] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(c.Parameters[j]), game.parameters.Select (x => x.name).ToArray())]; 
 
+                int val = EditorGUILayout.Popup(game.parameters.IndexOf(c.Parameters[j]), game.parameters.Select(x => x.name).ToArray());
+
+                Debug.Log(val);
+                Debug.Log(game.parameters[val]);
+                Debug.Log(game.parameters[val].paramGUID);
+
+                c.setParam(j, game.parameters[val]);
+
+                Debug.Log(c.Parameters[j].paramGUID);
 
 				GUI.color = Color.red;
 				if(GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
@@ -316,7 +332,7 @@ public class MyWindow : EditorWindow
 				c.RemoveParam (removingParam);
 			}
 		}
-		if(removingCondition!=null)
+		if(removingCondition>=0)
 		{
 			p.RemoveAutoActivatedChain  (removingCondition);
 		}
@@ -534,7 +550,7 @@ public class MyWindow : EditorWindow
             int i = 0;
             foreach (Path path in state.pathes)
             {
-                if (path.aimState != null)
+                if (path.aimState != null && path.aimStateGuid!=-1)
                 {
                     Handles.BeginGUI();
                     Handles.color = Color.red;
@@ -719,7 +735,10 @@ public class MyWindow : EditorWindow
                 }
                 i++;
             }
-            s.pathes.RemoveAll((p)=>removigPathes.Contains(p));
+            foreach(Path p in s.pathes.FindAll((p) => removigPathes.Contains(p)))
+            {
+                p.aimState = new State(-1);
+            }
         }
 
         currentChain.states.Remove(menuState);
@@ -806,7 +825,6 @@ public class MyWindow : EditorWindow
 		GUI.color = Color.yellow;
 		if (GUILayout.Button((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
 		{
-			Debug.Log (game.parameters.Count);
 			if(game.parameters.Count>0)
 			{
 				path.condition.AddParam(game.parameters[0]);
@@ -833,7 +851,7 @@ public class MyWindow : EditorWindow
 					continue;
 				}
 			}
-			path.condition.Parameters[i] = game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(path.condition.Parameters[i]), game.parameters.Select (x => x.name).ToArray())]; 
+			path.condition.setParam(i, game.parameters[EditorGUILayout.Popup (game.parameters.IndexOf(path.condition.Parameters[i]), game.parameters.Select (x => x.name).ToArray())]); 
 
 
 			GUI.color = Color.red;
@@ -906,16 +924,20 @@ public class MyWindow : EditorWindow
 
 				if (!game.parameters.Contains (path.changes[i].parameters [j])) {
 					if (game.parameters.Count > 0) {
-						path.changes[i].parameters [j] = game.parameters [0];
+						path.changes[i].setParam(game.parameters [0], j);
 					} else {
 						removingParam = path.changes[i].parameters [j];
 						continue;
 					}
 				}
-				path.changes[i].parameters [j] = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (path.changes[i].parameters [j]), game.parameters.Select (x => x.name).ToArray ())]; 
+
+				int v = EditorGUILayout.Popup (game.parameters.IndexOf (path.changes[i].parameters [j]), game.parameters.Select (x => x.name).ToArray ());
 
 
-				GUI.color = Color.red;
+                path.changes[i].setParam(game.parameters[v], j);
+                
+
+                GUI.color = Color.red;
 				if (GUILayout.Button ("", GUILayout.Height (15), GUILayout.Width (15))) {
 					removingParam = path.changes[i].parameters [j];
 				}

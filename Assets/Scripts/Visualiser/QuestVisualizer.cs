@@ -25,7 +25,7 @@ public class QuestVisualizer : MonoBehaviour {
         stateImage.sprite = state.image;
         stateText.text = state.description;
         foreach (Path p in state.pathes)
-        {   
+        {
             if (p.condition.ConditionValue)
             {
                 GameObject b = Instantiate(variantPrefab);

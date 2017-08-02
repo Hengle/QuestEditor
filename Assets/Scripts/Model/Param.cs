@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 [System.Serializable]
 public class Param
@@ -14,7 +15,7 @@ public class Param
 	public string tags;
 	public string description;
 	public Sprite image;
-	private int usableChainGuid;
+	public int usableChainGuid;
 	public Chain usableChain
 	{
 		get
@@ -34,32 +35,38 @@ public class Param
 		get
 		{
 			Dictionary<Condition, Chain> ret = new Dictionary<Condition, Chain>();
-			foreach(KeyValuePair<Condition, int> kvp in autoActivatedChainsGUIDS)
+			foreach(ConditionChain kc in autoActivatedChainsGUIDS)
 			{
-				ret.Add (kvp.Key, GUIDManager.GetChainByGuid(kvp.Value));
+				ret.Add (kc.c, GUIDManager.GetChainByGuid(kc.guid));
 			}
 			return ret;
 		}
 		set
 		{
-			autoActivatedChainsGUIDS = new Dictionary<Condition, int> ();
-			foreach(KeyValuePair<Condition, Chain> kvp in value)
+			autoActivatedChainsGUIDS = new List<ConditionChain>();
+            foreach (KeyValuePair<Condition, Chain> kvp in value)
 			{
-				autoActivatedChainsGUIDS.Add (kvp.Key, kvp.Value.ChainGuid);
+				autoActivatedChainsGUIDS.Add (new ConditionChain(kvp.Key, kvp.Value.ChainGuid));
 			}
 		}
 	}
 
-	public void RemoveAutoActivatedChain(Condition cond)
+    public void SetAutoActivatedChain(int id, Chain c)
+    {
+        autoActivatedChainsGUIDS[id].guid = c.ChainGuid;
+    }
+
+	public void RemoveAutoActivatedChain(int id)
 	{
-		autoActivatedChainsGUIDS.Remove (cond);
+		autoActivatedChainsGUIDS.RemoveAt (id);
 	}
 	public void AddAutoActivatedChain(Condition cond, Chain c)
 	{
-		autoActivatedChainsGUIDS.Add (cond, c.ChainGuid);
+        Debug.Log(c.ChainGuid);
+		autoActivatedChainsGUIDS.Add (new ConditionChain(cond, c.ChainGuid));
 	}
 
-	private Dictionary<Condition, int> autoActivatedChainsGUIDS = new Dictionary<Condition, int> ();
+    public List<ConditionChain> autoActivatedChainsGUIDS = new List<ConditionChain>();
 	//use guid
 	public Vector2 scrollPosition;
 	public int paramGUID;
