@@ -582,7 +582,12 @@ public class QuestWindow : EditorWindow
         if (header.Contains(Event.current.mousePosition) && makingPath == true)
         {
             GUI.backgroundColor = Color.yellow;
-            pathAimState = state;
+            if (Event.current.button == 0 && Event.current.type == EventType.MouseUp)
+            {
+                startPath.aimState = state;
+                makingPath = false;
+                Repaint();
+            }
         }
 			
 		state.position = new Rect (Mathf.Clamp(state.position.x, 5 , position.width-5-state.position.width), Mathf.Clamp(state.position.y, 55 , position.height-5-state.position.height), state.position.width, state.position.height);
@@ -628,34 +633,7 @@ public class QuestWindow : EditorWindow
                 }
                 makingPath = false;
             }
-
-            /*
-            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(20)))
-            {
-                makingPath = false;
-                if (inspectedState == currentChain.states[windowID] && inspectedPath == i)
-                {
-                    inspectedPath = -1;
-                    inspectedState = null;
-                }
-                else
-                {
-                    inspectedState = currentChain.states[windowID];
-                    inspectedPath = i;
-                }
-            };*/
-
-
-            if (c.type == EventType.MouseDown && c.button == 0)
-            {
-                if (GUILayoutUtility.GetLastRect().Contains(c.mousePosition))
-                {
-                    Debug.Log("!");
-                }
-            }
-
             i++;
-
         }
 
         GUI.backgroundColor = Color.white;
@@ -675,17 +653,6 @@ public class QuestWindow : EditorWindow
             menu.AddItem(new GUIContent("Make start"), false, MakeStart);
             menu.ShowAsContext();
         }
-
-        if (Event.current.button == 0 && Event.current.type == EventType.MouseUp)
-            {
-                if (windowID == currentChain.states.IndexOf(pathAimState) && makingPath)
-                {
-                    startPath.aimState = pathAimState;
-                    makingPath = false;
-                    Repaint();
-                }
-            }
- 
 
         GUILayout.BeginHorizontal ();
 		GUILayout.BeginVertical ();
@@ -741,6 +708,7 @@ public class QuestWindow : EditorWindow
             }
         }
 
+        inspectedState = null;
         currentChain.states.Remove(menuState);
     }
 
