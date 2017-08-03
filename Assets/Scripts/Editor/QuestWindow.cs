@@ -44,13 +44,24 @@ public class QuestWindow : EditorWindow
     private State inspectedState;
     private int inspectedPath;
 	private Param deletingParam;
+    private Texture2D backgroundTexture;
+    private Texture2D BackgroundTexture
+    {
+        get
+        {
+            if (backgroundTexture == null)
+            {
+                backgroundTexture = (Texture2D)Resources.Load("Icons/background") as Texture2D;
+                BackgroundTexture.wrapMode = TextureWrapMode.Repeat;
+            }
+            return backgroundTexture;
+        }
+    }
 
-
-    [MenuItem("Window/Quest creator")]
 	static void Init()
 	{
 		QuestWindow window = (QuestWindow)EditorWindow.GetWindow(typeof(QuestWindow), false,  "Quest creator", true);
-        window.minSize = new Vector2(1130, 400);
+        window.minSize = new Vector2(600, 400);
 		window.Show();
 	}
 
@@ -63,46 +74,54 @@ public class QuestWindow : EditorWindow
 
     void OnGUI()
 	{
-        GUILayout.BeginVertical ();
+        if (Event.current.type == EventType.ValidateCommand)
+        {
+            switch (Event.current.commandName)
+            {
+                case "UndoRedoPerformed":
+                    Repaint();
+                    break;
+            }
 
-	 	
-		PathGame g =  (PathGame)EditorGUILayout.ObjectField(game, typeof(PathGame), false);
-
-		if(g!=game)
-		{
-			if (game)
-			{
-				AssetDatabase.SaveAssets ();
-			}
-			game = g;
-            GUIDManager.SetInspectedGame(game);
         }
 
-		if (game) {
-			chainEditorMode = (EditorMode)Tabs.DrawTabs (new string[] { "packs", "chains", "parameters" }, (int)chainEditorMode);
-			switch (chainEditorMode) {
+        switch (chainEditorMode) {
 			case EditorMode.chains:
-				DrowChainsWindow ();
+                if (game)
+                {
+                    DrowChainsWindow();
+                }
 				break;
 			case EditorMode.packs:
 				DrowPacksWindow ();
 				break;
 			case EditorMode.parameters:
-				DrowParamsWindow ();
+                if (game)
+                {
+                    DrowParamsWindow();
+                }
 				break;
 			}
-		}
-        GUILayout.EndVertical();
-       
-		if(game)
+
+        EditorMode newChainMode = (EditorMode)Tabs.DrawTabs(new Rect(0, 0, position.width, 30), new string[] { "packs", "chains", "parameters" }, (int)chainEditorMode);
+        if (newChainMode == EditorMode.chains && newChainMode!=chainEditorMode)
+        {
+            RecalculateWindowsPositions();
+        }
+
+        chainEditorMode = newChainMode;
+
+        if (game)
 		{
 			game.SetDirty ();
 		}
+       
     }
 
     private void DrowParamsWindow()
     {
-		Event evt = Event.current;
+        Undo.RecordObject(game, "params");
+        Event evt = Event.current;
 
 		if (evt.button == 1 && evt.type == EventType.MouseDown)
 		{
@@ -112,7 +131,10 @@ public class QuestWindow : EditorWindow
 
 		}
 
-		ParamsScrollPosition = GUILayout.BeginScrollView(ParamsScrollPosition, false, true, GUIStyle.none, GUI.skin.verticalScrollbar,GUILayout.Width(position.width-5), GUILayout.Height(position.height-35));
+        GUILayout.BeginVertical();
+        GUILayout.Space(35);
+
+        ParamsScrollPosition = GUILayout.BeginScrollView(ParamsScrollPosition, false, true, GUIStyle.none, GUI.skin.verticalScrollbar,GUILayout.Width(position.width-5), GUILayout.Height(position.height-35));
 		GUILayout.BeginVertical();
 		int i = 0;
 		Vector2 rectSize = new Vector2 ((position.width-40)/3, (position.width-40)/3);
@@ -126,7 +148,7 @@ public class QuestWindow : EditorWindow
 			Rect r = new Rect (new Rect (i % 3 * (rectSize.x + 5), Mathf.FloorToInt (i / 3) * (rectSize.y + 5 / 1.5f), rectSize.x, rectSize.y));
 			EditorGUI.DrawRect (r, Color.gray/2);
 
-			DoParamWindow (game.parameters[i], rectSize.x+5, r);
+			DoParamWindow (game.parameters[i], new Rect(r.position.x, r.position.y, r.width+3, r.height+3));
 			//GUILayout.EndArea ();
 			if(i%3==2 || i== game.parameters.Count-1)
 			{
@@ -141,17 +163,19 @@ public class QuestWindow : EditorWindow
 		}
 		GUILayout.EndVertical ();
         GUILayout.EndScrollView();
+        GUILayout.EndVertical();
+        Undo.FlushUndoRecordObjects();
     }
 
-	void DoParamWindow(Param p, float w, Rect r)
+	void DoParamWindow(Param p, Rect r)
 	{
-		p.scrollPosition = GUILayout.BeginScrollView (p.scrollPosition, false, false, GUIStyle.none, GUI.skin.label, GUILayout.Width(r.width+5), GUILayout.Height(r.height));
-		GUILayout.BeginHorizontal (GUILayout.Width(w));
-		GUILayout.BeginVertical (GUILayout.Width(w-5), GUILayout.Height(w/1.5f));
-		GUILayout.Space (5);
+        p.scrollPosition = GUILayout.BeginScrollView (p.scrollPosition, false, false, GUIStyle.none, GUI.skin.label, GUILayout.Width(r.width), GUILayout.Height(r.height));
+		GUILayout.BeginHorizontal (GUILayout.Width(r.width-5));
+		GUILayout.BeginVertical (GUILayout.Width(r.width-5), GUILayout.Height((r.width-10)/1.5f));
+        GUILayout.Space (5);
 		GUILayout.BeginHorizontal ();
-		p.name = GUILayout.TextArea (p.name, GUILayout.Width(185));
-		p.tags = GUILayout.TextArea (p.tags, GUILayout.Width(150));
+		p.name = EditorGUILayout.TextArea (p.name, GUILayout.Width(2*(r.width-10)/3-15));
+		p.tags = EditorGUILayout.TextArea (p.tags, GUILayout.Width((r.width-10) / 3 - 15));
 		GUI.color = Color.red;
 		if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
 		{
@@ -166,7 +190,7 @@ public class QuestWindow : EditorWindow
 		}
 
 		if (p.showing) {
-			p.description = GUILayout.TextArea (p.description, GUILayout.Height (45));
+			p.description = EditorGUILayout.TextArea (p.description, GUILayout.Height (45), GUILayout.Width(r.width-10));
 			p.image = (Sprite)EditorGUILayout.ObjectField (p.image, typeof(Sprite), false);
 		
 
@@ -193,7 +217,18 @@ public class QuestWindow : EditorWindow
 			if (p.activating && p.manualActivationWithConditions) 
 			{
 				EditorGUILayout.BeginHorizontal ();
-				p.manualUsingCondition.conditionString = EditorGUILayout.TextArea (p.manualUsingCondition.conditionString); 
+                GUI.backgroundColor = Color.white;
+
+                try
+                {
+                    ExpressionSolver.CalculateBool(p.manualUsingCondition.conditionString, p.manualUsingCondition.Parameters);
+                }
+                catch
+                {
+                    GUI.color = Color.red;
+                }
+
+                p.manualUsingCondition.conditionString = EditorGUILayout.TextArea (p.manualUsingCondition.conditionString, GUILayout.Width(r.width - 35)); 
 				GUI.color = Color.yellow;
 				if (GUILayout.Button ((Texture2D)Resources.Load ("Icons/add") as Texture2D, GUILayout.Width (20), GUILayout.Height (20))) {
 					if (game.parameters.Count > 0) {
@@ -208,7 +243,7 @@ public class QuestWindow : EditorWindow
 
 				for (int i = 0; i < p.manualUsingCondition.Parameters.Count; i++) {
 					EditorGUILayout.BeginHorizontal ();
-					EditorGUILayout.LabelField ("[p" + i + "]", GUILayout.Width (35));
+					EditorGUILayout.LabelField ("[p" + i + "]", GUILayout.Width ((r.width-10)/3));
 
 					if (!game.parameters.Contains (p.manualUsingCondition.Parameters [i])) {
 						if (game.parameters.Count > 0) {
@@ -278,7 +313,15 @@ public class QuestWindow : EditorWindow
 			GUILayout.BeginHorizontal ();
 			Param removingParam = null;
 			GUI.color = Color.white;
-			c.conditionString = GUILayout.TextArea (c.conditionString);
+            try
+            {
+                ExpressionSolver.CalculateBool(c.conditionString, c.Parameters);
+            }
+            catch
+            {
+                GUI.color = Color.red;
+            }
+            c.conditionString = EditorGUILayout.TextArea (c.conditionString, GUILayout.Width(r.width-35));
 			GUI.color = Color.yellow;
 			if (GUILayout.Button((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
 			{
@@ -295,7 +338,7 @@ public class QuestWindow : EditorWindow
 			for(int j = 0;j<c.Parameters.Count;j++)
 			{
 				EditorGUILayout.BeginHorizontal ();
-				EditorGUILayout.LabelField ("[p"+j+"]", GUILayout.Width(35));
+				EditorGUILayout.LabelField ("[p"+j+"]", GUILayout.Width((r.width-10)/3));
 
 				if(!game.parameters.Contains(c.Parameters[j]))
 				{
@@ -309,15 +352,7 @@ public class QuestWindow : EditorWindow
 				}
 
                 int val = EditorGUILayout.Popup(game.parameters.IndexOf(c.Parameters[j]), game.parameters.Select(x => x.name).ToArray());
-
-                Debug.Log(val);
-                Debug.Log(game.parameters[val]);
-                Debug.Log(game.parameters[val].paramGUID);
-
                 c.setParam(j, game.parameters[val]);
-
-                Debug.Log(c.Parameters[j].paramGUID);
-
 				GUI.color = Color.red;
 				if(GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
 				{
@@ -348,22 +383,30 @@ public class QuestWindow : EditorWindow
 	}
 
     void DrowPacksWindow ()
-	{
-		
-		GUILayout.BeginHorizontal ();
-		DrawPacksList ();
-		DrawChainsList ();
-		GUILayout.EndHorizontal ();
+	{  
+        GUILayout.BeginVertical();
+        GUILayout.Space(30);
+
+            GUILayout.BeginHorizontal();
+        Undo.RecordObject(game, "packs and chains");
+   
+        DrawPacksList();
+        DrawChainsList();
+        Undo.FlushUndoRecordObjects();
+        GUILayout.EndHorizontal();
+
+        GUILayout.EndVertical();
 	}
 
 	void DrawPacksList()
 	{
-		packsScrollPosition = GUILayout.BeginScrollView (packsScrollPosition, false, true, GUIStyle.none, GUI.skin.label, GUILayout.Width(position.width/2+5), GUILayout.Height(position.height-35));
+        packsScrollPosition = GUILayout.BeginScrollView (packsScrollPosition, false, true, GUIStyle.none, GUI.skin.label, GUILayout.Width(position.width/2+5), GUILayout.Height(position.height-35));
 		GUILayout.BeginVertical();
 		ChainPack deletingPack = null;
 
 		GUI.color = Color.green;
-		if(GUILayout.Button("new pack", GUILayout.Width(position.width/2-30), GUILayout.Height(15)))
+
+        if (GUILayout.Button("new pack", GUILayout.Width(position.width/2-30), GUILayout.Height(15)))
 		{
 			currentPack = new ChainPack ();
 			game.chainPacks.Insert(0, currentPack);
@@ -383,9 +426,9 @@ public class QuestWindow : EditorWindow
 
 			Rect r = EditorGUILayout.BeginHorizontal (style);
 			GUI.SetNextControlName ("packName"+(counter-1));
-			pack.name = GUILayout.TextArea (pack.name, GUILayout.Width(position.width/2-60), GUILayout.Height(15));
-
-			if(GUI.GetNameOfFocusedControl ()=="packName"+(counter-1))
+			pack.name = EditorGUILayout.TextArea (pack.name, GUILayout.Width(position.width/4-30), GUILayout.Height(15));
+            pack.tags = EditorGUILayout.TextArea(pack.tags, GUILayout.Width(position.width / 4 - 30), GUILayout.Height(15));
+            if (GUI.GetNameOfFocusedControl ()=="packName"+(counter-1))
 			{
 				currentPack = pack;
 			}
@@ -395,7 +438,7 @@ public class QuestWindow : EditorWindow
 				deletingPack = pack;
 			}
 
-			if (Event.current != null && Event.current.isMouse)
+			if (Event.current.isMouse)
 			{
 				if (r.Contains (Event.current.mousePosition)) 
 				{
@@ -411,7 +454,10 @@ public class QuestWindow : EditorWindow
 			
 		if(deletingPack!=null)
 		{
-			if(deletingPack == currentPack)
+            inspectedPath = -1;
+            inspectedState = null;
+
+            if (deletingPack == currentPack)
 			{
 				if(game.chainPacks.IndexOf(deletingPack)==0){
 					if (game.chainPacks.Count > 1) {
@@ -432,7 +478,7 @@ public class QuestWindow : EditorWindow
 
 		GUILayout.EndVertical ();
 		GUILayout.EndScrollView ();
-	}
+    }
 
 	void DrawChainsList()
 	{
@@ -459,10 +505,12 @@ public class QuestWindow : EditorWindow
 		{
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();
-			chain.name = GUILayout.TextArea (chain.name, GUILayout.Width(position.width/2-60), GUILayout.Height(15));
+			chain.name = EditorGUILayout.TextArea (chain.name, GUILayout.Width(position.width/2-60), GUILayout.Height(15));
 			if(GUILayout.Button("edit", GUILayout.Width(50), GUILayout.Height(15)))
 			{
 				currentChain = chain;
+                inspectedPath = -1;
+                inspectedState = null;
 				chainEditorMode = EditorMode.chains;
 			}
 			GUILayout.EndVertical ();
@@ -477,7 +525,9 @@ public class QuestWindow : EditorWindow
 
 		if(deletingChain!=null)
 		{
-			currentPack.chains.Remove (deletingChain);
+            inspectedPath = -1;
+            inspectedState = null;
+            currentPack.chains.Remove (deletingChain);
 	    }
 
 		GUILayout.EndVertical ();
@@ -487,16 +537,54 @@ public class QuestWindow : EditorWindow
 
     void DrowChainsWindow ()
 	{
+        Undo.RecordObject(game, "chains");
         if (currentChain == null)
         {
-            return;
+            inspectedPath = -1;
+            inspectedState = null;
+            foreach (ChainPack pack in game.chainPacks)
+            {
+                foreach (Chain c in pack.chains)
+                {
+                    currentChain = c;        
+                }
+            }
+            if (currentChain == null)
+            {
+                return;
+            }
         }
+
+        Rect fieldRect = new Rect(0, 30, position.width, position.height);
+        GUI.DrawTextureWithTexCoords(fieldRect, BackgroundTexture, new Rect(0, 0, fieldRect.width / BackgroundTexture.width, fieldRect.height / BackgroundTexture.height));
+
+
+        if (Event.current.type == EventType.MouseDown && Event.current.button == 2)
+        {
+            lastMousePosition = Event.current.mousePosition;
+        }
+
+        if (Event.current.type == EventType.MouseDrag && Event.current.button == 2)
+        {
+            Vector2 delta = Event.current.mousePosition - lastMousePosition;
+            foreach (State s in currentChain.states)
+            {
+                s.position = new Rect(s.position.position+delta, s.position.size);
+            }
+            lastMousePosition = Event.current.mousePosition;
+            Repaint();
+        }
+
+        DrawAditional();
+
         BeginWindows ();
 
         if (makingPath && !makingPathRect.Contains(Event.current.mousePosition))
         {
             startPath.aimState = new State(-1);
         }
+
+     
 
         foreach (State state in currentChain.states)
 		{
@@ -509,9 +597,6 @@ public class QuestWindow : EditorWindow
         }
 
         EndWindows ();
-
-
-        DrawAditional();
 
 
         Event evt = Event.current;
@@ -531,9 +616,26 @@ public class QuestWindow : EditorWindow
         {
             makingPath = false;
         }
+
+        Undo.FlushUndoRecordObjects();
     }
 
-	void DrawAditional (){
+    private void RecalculateWindowsPositions()
+    {
+        if (currentChain!=null)
+        {
+            Vector2 delta;
+
+            delta = position.center - currentChain.StartState.position.position;
+            
+            foreach (State s in currentChain.states)
+            {
+                s.position = new Rect(s.position.position + delta, s.position.size);
+            }
+        }
+    }
+
+    void DrawAditional (){
 
         if (makingPath)
 		{
@@ -589,10 +691,8 @@ public class QuestWindow : EditorWindow
                 Repaint();
             }
         }
-			
-		state.position = new Rect (Mathf.Clamp(state.position.x, 5 , position.width-5-state.position.width), Mathf.Clamp(state.position.y, 55 , position.height-5-state.position.height), state.position.width, state.position.height);
-
-        state.position = GUILayout.Window(currentChain.states.IndexOf(state), state.position, DoStateWindow, ss, GUILayout.Width(150), GUILayout.Height(100));
+				
+        state.position = GUILayout.Window(currentChain.states.IndexOf(state), state.position, DoStateWindow, ss, GUILayout.Width(180), GUILayout.Height(120));
 
         int i = 0;
 
@@ -648,15 +748,17 @@ public class QuestWindow : EditorWindow
             menuState = currentChain.states[windowID];
             lastMousePosition = evt.mousePosition;
             GenericMenu menu = new GenericMenu();
+            Undo.RecordObject(game, "chainsed");
             menu.AddItem(new GUIContent("Remove state"), false, RemoveState);
             menu.AddItem(new GUIContent("Add path"), false, AddPath);
             menu.AddItem(new GUIContent("Make start"), false, MakeStart);
+            Undo.FlushUndoRecordObjects();
             menu.ShowAsContext();
         }
 
         GUILayout.BeginHorizontal ();
 		GUILayout.BeginVertical ();
-		currentChain.states [windowID].description = GUILayout.TextArea (currentChain.states [windowID].description, GUILayout.Height(45));
+		currentChain.states [windowID].description = EditorGUILayout.TextArea (currentChain.states [windowID].description, GUILayout.Height(75), GUILayout.Width(170));
 		currentChain.states [windowID].image = (Sprite)EditorGUILayout.ObjectField (currentChain.states [windowID].image, typeof(Sprite), false);
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();
@@ -729,15 +831,15 @@ public class QuestWindow : EditorWindow
                 ss = inspectedState.pathes[inspectedPath].text.Split(new string[] { "\n" }, System.StringSplitOptions.RemoveEmptyEntries)[0];
                 ss = ss.Substring(0, Mathf.Min(20, ss.Length));
             }
-            GUILayout.Window(42, new Rect(inspectedState.position.x, inspectedState.position.y+ inspectedState.position.height, 100, 50), DoPathWindow, ss, GUILayout.Width(100), GUILayout.Height(50));
+            GUILayout.Window(42, new Rect(inspectedState.position.x, inspectedState.position.y+ inspectedState.position.height, 100, 50), DoPathWindow, ss, GUILayout.Width(165), GUILayout.Height(50));
         }
     }
 
     private void DoPathWindow(int id)
     {
-        GUILayout.BeginVertical(GUILayout.Width(130));
+        GUILayout.BeginVertical(GUILayout.Width(171));
 		GUILayout.BeginHorizontal ();
-        inspectedState.pathes[inspectedPath].text = GUILayout.TextArea(inspectedState.pathes[inspectedPath].text, GUILayout.Height(30));
+        inspectedState.pathes[inspectedPath].text = EditorGUILayout.TextArea(inspectedState.pathes[inspectedPath].text, GUILayout.Height(30), GUILayout.Width(171-25));
 		GUI.color = Color.red;
 		if(GUILayout.Button("",GUILayout.Width(20),GUILayout.Height(20)))
 		{
@@ -789,7 +891,19 @@ public class QuestWindow : EditorWindow
 	private void DrawCondition(Path path)
 	{
 		EditorGUILayout.BeginHorizontal ();
-		path.condition.conditionString = EditorGUILayout.TextArea (path.condition.conditionString); 
+
+        GUI.backgroundColor = Color.white;
+        try
+        {
+            ExpressionSolver.CalculateBool(path.condition.conditionString, path.condition.Parameters);
+        }
+        catch
+        {
+            GUI.color = Color.red;
+        }
+
+		path.condition.conditionString = EditorGUILayout.TextArea (path.condition.conditionString, GUILayout.Width(171 - 25));
+         
 		GUI.color = Color.yellow;
 		if (GUILayout.Button((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
 		{
@@ -866,11 +980,21 @@ public class QuestWindow : EditorWindow
 					continue;
 				}
 			}
-			path.changes [i].aimParam = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (path.changes[i].aimParam), game.parameters.Select (x => x.name).ToArray (), GUILayout.Width(50))]; 
+			path.changes [i].aimParam = game.parameters [EditorGUILayout.Popup (game.parameters.IndexOf (path.changes[i].aimParam), game.parameters.Select (x => x.name).ToArray ())]; 
 
-			GUILayout.Label (" = ");
+			GUILayout.Label ("=");
 
-			path.changes [i].changeString = GUILayout.TextArea(path.changes [i].changeString, GUILayout.Width(150));
+            GUI.backgroundColor = Color.white;
+            try
+            {
+                ExpressionSolver.CalculateFloat(path.changes[i].changeString, path.changes[i].parameters);
+            }
+            catch
+            {
+                GUI.color = Color.red;
+            }
+
+            path.changes [i].changeString = EditorGUILayout.TextArea(path.changes [i].changeString, GUILayout.Width(58));
 			GUI.color = Color.red;
 			if (GUILayout.Button ("", GUILayout.Height (15), GUILayout.Width (15))) {
 				removingChanger = path.changes[i];

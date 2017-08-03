@@ -17,6 +17,11 @@ public class PilePlayer : MonoBehaviour
         chains = new Queue<Chain>(chains.ToList().OrderBy(a => Guid.NewGuid()).ToList());
     }
 
+    public void Init(bool shufflePileAfterEnd)
+    {
+        shuffleAfterEnding = shufflePileAfterEnd;
+    }
+
     public void Add(ChainPack pack)
     {
         Add(pack.chains);

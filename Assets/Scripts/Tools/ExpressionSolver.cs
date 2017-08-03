@@ -10,9 +10,12 @@ public static class ExpressionSolver {
     public static float CalculateFloat(string evalString, List<Param> parameters)
     {
         string eval = evalString;
-        for (int i = 0; i < parameters.Count; i++)
+        if (parameters!=null)
         {
-            eval = eval.Replace("[p" + i + "]", "(" + parameters[i].PValue + ")");
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                eval = eval.Replace("[p" + i + "]", "(" + parameters[i].PValue + ")");
+            }
         }
         eval = ReplaceRandom(eval);
         return (float)parser.EvaluateExpression(eval).Value; 
@@ -25,9 +28,12 @@ public static class ExpressionSolver {
             return true;
         }
         string eval = evalString;
-        for (int i = 0; i < parameters.Count; i++)
+        if (parameters != null)
         {
-            eval = eval.Replace("[p" + i + "]", "(" + parameters[i].PValue + ")");
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                eval = eval.Replace("[p" + i + "]", "(" + parameters[i].PValue + ")");
+            }
         }
         eval = ReplaceRandom(eval);
         return BoolExpression.BoolValue(eval, new Dictionary<string, float>());

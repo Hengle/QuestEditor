@@ -12,7 +12,7 @@ public class PopupInfo: Singleton<PopupInfo>
         popup = Instantiate(Resources.Load("Prefabs/Visualiser/Popup") as GameObject);
         popup.GetComponentInChildren<Text>().text = description;
         popup.transform.SetParent(FindObjectOfType<Canvas>().transform);
-        popup.transform.position = position;
+        popup.transform.position = position + new Vector3(popup.GetComponent<RectTransform>().sizeDelta.x/2, -popup.GetComponent<RectTransform>().sizeDelta.y / 2, 0);
     }
 
     public static void HideInfo()

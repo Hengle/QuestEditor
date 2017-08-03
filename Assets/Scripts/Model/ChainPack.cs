@@ -10,9 +10,11 @@ public class ChainPack {
 
 	[SerializeField]
 	public string name;
+    public string tags;
 
-	public ChainPack()
+    public ChainPack()
 	{
 		name = "New pack";
+        tags = "";
 	}
 }

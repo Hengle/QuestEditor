@@ -11,9 +11,10 @@ public class QuestVisualizer : MonoBehaviour {
     public Transform variantsContent;
     public GameObject variantPrefab;
 
-    private void Awake()
+    public void Init(ResourceManager res)
     {
         FindObjectOfType<ChainPlayer>().OnStateActivation+=ActivateState;
+        GetComponentInChildren<ItemsVisualizer>().Init(res);
     }
 
     private void ActivateState(State state)
@@ -35,6 +36,7 @@ public class QuestVisualizer : MonoBehaviour {
                     FindObjectOfType<ChainPlayer>().GoByPath(p);
                 });
                 b.transform.SetParent(variantsContent);
+                b.transform.localScale = Vector3.one;
             }
         }
     }

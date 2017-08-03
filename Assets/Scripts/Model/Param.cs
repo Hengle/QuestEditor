@@ -62,7 +62,6 @@ public class Param
 	}
 	public void AddAutoActivatedChain(Condition cond, Chain c)
 	{
-        Debug.Log(c.ChainGuid);
 		autoActivatedChainsGUIDS.Add (new ConditionChain(cond, c.ChainGuid));
 	}
 
@@ -79,22 +78,17 @@ public class Param
         }
         set
         {
-            if (pValue != value)
-            {
                 pValue = value;
                 CheckConditions();
-            }
-            else
-            {
-                pValue = value;
-            }
         }
     }
 
     private void CheckConditions()
     {
+        Debug.Log(autoActivatedChains.Count+" "+name);
         foreach (KeyValuePair<Condition, Chain> pair in autoActivatedChains)
         {
+            Debug.Log(pair.Key.ConditionValue);
             if (pair.Key.ConditionValue)
             {
                 OnParamActivation(pair.Value);

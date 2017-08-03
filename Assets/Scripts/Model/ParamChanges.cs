@@ -3,8 +3,19 @@
 [System.Serializable]
 public class ParamChanges
 {
-    public Param aimParam;
+    public Param aimParam
+    {
+        get
+        {   
+            return  GUIDManager.GetItemByGuid(aimParamGui);
+        }
+        set
+        {
+            aimParamGui = value.paramGUID;
+        } 
+    }
 
+    public int aimParamGui;
 	public List<Param> parameters
 	{
 		get

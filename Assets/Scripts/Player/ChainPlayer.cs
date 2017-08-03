@@ -21,16 +21,30 @@ public class ChainPlayer : MonoBehaviour
         {
             FindObjectOfType<ResourceManager>().SetParam(ch.aimParam.name, ch.changeString, ch.parameters);
         }
+
         ActivateState(p.aimState);
+
+        foreach (ParamChanges ch in p.changes)
+        {
+            ch.aimParam.PValue = ch.aimParam.PValue;
+        }
     }
 
     private void ActivateState(State startState)
     {
+
         currentState = startState;
         foreach(Path c in startState.pathes)
         {
             if (c.auto)
             {
+                Debug.Log("___");
+                Debug.Log(c.condition.conditionString);
+                foreach (Param p in c.condition.Parameters)
+                {
+                    Debug.Log(p.PValue);
+                }
+
                 if (c.condition.ConditionValue)
                 {
                     if (c.waitInput)
