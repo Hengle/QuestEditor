@@ -9,6 +9,7 @@ public class Chain
 	public string name;
 	private State startState;
 	public int ChainGuid;
+	public bool returnAfterEnd;
 
     public State StartState
     {

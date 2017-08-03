@@ -11,7 +11,23 @@ public class GUIDManager
         inspectedgame = g;
     }
 
-   
+	public static Chain GetChainByStateGuid(int guid)
+	{
+		foreach(ChainPack cp in inspectedgame.chainPacks)
+		{
+			foreach(Chain c in cp.chains)
+			{
+				foreach(State s in c.states)
+				{
+					if(s.stateGUID == guid)
+					{
+						return c;
+					}
+				}
+			}
+		}
+		return null;
+	}
 
     public static int GetStateGUID()
     {
