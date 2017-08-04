@@ -26,6 +26,18 @@ public class Chain
 	public List<State> states = new List<State>();
     public List<StateLink> statesLinks = new List<StateLink>();
 
+    public List<StateLink> StateLinks
+    {
+        get
+        {
+            if (statesLinks == null)
+            {
+                statesLinks = new List<StateLink>();
+            }
+            return statesLinks;
+        }
+    }
+
     public Chain(int cGuid, int sGuid)
 	{
 		ChainGuid = cGuid;

@@ -628,6 +628,10 @@ public class QuestWindow : EditorWindow
             {
                 s.position = new Rect(s.position.position+delta, s.position.size);
             }
+            foreach (StateLink sl in currentChain.statesLinks)
+            {
+                sl.position = new Rect(sl.position.position + delta, sl.position.size);
+            }
             lastMousePosition = Event.current.mousePosition;
             Repaint();
         }
@@ -648,10 +652,12 @@ public class QuestWindow : EditorWindow
 			DrawStateBox (state);
 		}
 
-        foreach (StateLink stateLink in currentChain.statesLinks)
+
+        foreach (StateLink stateLink in currentChain.StateLinks)
         {
             DrawStateLinkBox(stateLink);
         }
+        
 
         if (inspectedState != null)
         {
@@ -697,6 +703,11 @@ public class QuestWindow : EditorWindow
             {
                 s.position = new Rect(s.position.position + delta, s.position.size);
             }
+
+            foreach (StateLink sl in currentChain.statesLinks)
+            {
+                sl.position = new Rect(sl.position.position + delta, sl.position.size);
+            }
         }
     }
 
@@ -721,7 +732,17 @@ public class QuestWindow : EditorWindow
                 {
                     Handles.BeginGUI();
                     Handles.color = Color.red;
-                    DrawNodeCurve( new Rect(state.position.position + new Vector2(state.position.width + 15f, 7.5f + i * 19), Vector2.zero), path.aimState.position, Color.gray);
+
+                    Rect end = path.aimState.position;
+
+                    foreach (StateLink sl in currentChain.statesLinks)
+                    {
+                        if (sl.stateGUID == path.aimState.stateGUID)
+                        {
+                            end = sl.position;
+                        }
+                    }
+                    DrawNodeCurve( new Rect(state.position.position + new Vector2(state.position.width + 15f, 7.5f + i * 19), Vector2.zero), end, Color.gray);
                     Handles.EndGUI();
                 }
                 i++;
@@ -733,18 +754,27 @@ public class QuestWindow : EditorWindow
     {
         Rect header = new Rect(stateLink.position.position, new Vector3(stateLink.position.width, 20));
 
+        
         if (header.Contains(Event.current.mousePosition) && makingPath == true)
         {
             GUI.backgroundColor = Color.yellow;
             if (Event.current.button == 0 && Event.current.type == EventType.MouseUp)
             {
-                startPath.aimState = GUIDManager.GetStateByGuid(stateLink.stateGUID);
+                if (GUIDManager.GetStateByGuid(stateLink.stateGUID)!=null)
+                {
+                    startPath.aimState = GUIDManager.GetStateByGuid(stateLink.stateGUID);
+                }
                 makingPath = false;
                 Repaint();
             }
         }
 
-        stateLink.position = GUILayout.Window(currentChain.statesLinks.IndexOf(stateLink), stateLink.position, DoStateLinkWindow, GUIDManager.GetStateByGuid(stateLink.stateGUID).description, GUILayout.Width(100), GUILayout.Height(60));   
+        string title = "";
+        if (GUIDManager.GetStateByGuid(stateLink.stateGUID)!=null)
+        {
+            title = GUIDManager.GetStateByGuid(stateLink.stateGUID).description;
+        }
+        stateLink.position = GUILayout.Window(currentChain.statesLinks.IndexOf(stateLink)+90000, stateLink.position, DoStateLinkWindow, title, GUILayout.Width(100), GUILayout.Height(60));   
         GUI.backgroundColor = Color.white;
     }
 
@@ -851,11 +881,12 @@ public class QuestWindow : EditorWindow
 
     void DoStateLinkWindow(int windowID)
     {
+        
         Event evt = Event.current;
 
         if (evt.button == 1 && evt.type == EventType.MouseDown)
         {
-            //menuState = currentChain.states[windowID];
+            menuStateLink = currentChain.statesLinks[windowID-90000];
             lastMousePosition = evt.mousePosition;
             GenericMenu menu = new GenericMenu();
             Undo.RecordObject(game, "remove link");
@@ -863,10 +894,39 @@ public class QuestWindow : EditorWindow
             Undo.FlushUndoRecordObjects();
             menu.ShowAsContext();
         }
+        
 
         GUILayout.BeginVertical();
-        currentChain.statesLinks[windowID].chainGUID = currentChain.statesLinks[0].chainGUID;
-        currentChain.statesLinks[windowID].stateGUID = currentChain.statesLinks[0].stateGUID;
+        List<Chain> avaliableChains = new List<Chain>();
+        foreach (ChainPack cp in game.chainPacks)
+        {
+            avaliableChains.AddRange(cp.chains);
+        }
+
+        avaliableChains.Remove(currentChain);
+
+        if (avaliableChains.Count>0)
+        {
+            if (currentChain.statesLinks.Count>(windowID - 90000))
+            {
+                currentChain.statesLinks[windowID - 90000].chainGUID = avaliableChains[0].ChainGuid;
+            }
+
+            currentChain.statesLinks[windowID-90000].chainGUID = avaliableChains[EditorGUILayout.Popup(avaliableChains.IndexOf(GUIDManager.GetChainByGuid(currentChain.statesLinks[windowID-90000].chainGUID)), avaliableChains.Select(x => x.name).ToArray())].ChainGuid;
+
+            List<State> avaliableStates = new List<State>();
+            foreach (State  s in GUIDManager.GetChainByGuid(currentChain.statesLinks[windowID - 90000].chainGUID).states)
+            {
+                avaliableStates.Add(s);
+            }
+
+            if (GUIDManager.GetStateByGuid(currentChain.statesLinks[windowID-90000].stateGUID) == null || !avaliableStates.Contains(GUIDManager.GetStateByGuid(currentChain.statesLinks[windowID-90000].stateGUID)))
+            {
+                currentChain.statesLinks[windowID-90000].stateGUID = avaliableStates[0].stateGUID;
+            }
+
+            currentChain.statesLinks[windowID-90000].stateGUID = avaliableStates[EditorGUILayout.Popup(avaliableStates.IndexOf(GUIDManager.GetStateByGuid(currentChain.statesLinks[windowID - 90000].stateGUID)), avaliableStates.Select(x => x.description).ToArray())].stateGUID;
+        }
         GUILayout.EndVertical();
         GUI.DragWindow();
     }
@@ -895,6 +955,8 @@ public class QuestWindow : EditorWindow
 
         //inspectedState = null;
         currentChain.statesLinks.Remove(menuStateLink);
+        Repaint();
+        Debug.Log(currentChain.statesLinks.Count);
     }
 
     private void MakeStart()
