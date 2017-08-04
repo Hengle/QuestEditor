@@ -13,7 +13,8 @@ public class Path
     public List<ParamChanges> changes = new List<ParamChanges>();
     public int aimStateGuid;
     public Sprite pathSprite;
-	public State aimState
+
+    public State aimState
     {
         get
         {

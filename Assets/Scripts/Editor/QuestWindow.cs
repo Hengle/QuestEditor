@@ -45,6 +45,8 @@ public class QuestWindow : EditorWindow
     private int inspectedPath;
 	private Param deletingParam;
     private Texture2D backgroundTexture;
+    private StateLink menuStateLink;
+
     private Texture2D BackgroundTexture
     {
         get
@@ -591,6 +593,11 @@ public class QuestWindow : EditorWindow
 			DrawStateBox (state);
 		}
 
+        foreach (StateLink stateLink in currentChain.statesLinks)
+        {
+            DrawStateLinkBox(stateLink);
+        }
+
         if (inspectedState != null)
         {
             DrawPathWindow();
@@ -609,7 +616,8 @@ public class QuestWindow : EditorWindow
 
 				GenericMenu menu = new GenericMenu();
 				menu.AddItem(new GUIContent("Add state"), false, CreateNewState);
-				menu.ShowAsContext();
+                menu.AddItem(new GUIContent("Add state link"), false, CreateNewStateLink);
+                menu.ShowAsContext();
 		}
 
         if (evt.button == 0 && evt.type == EventType.MouseUp)
@@ -619,6 +627,8 @@ public class QuestWindow : EditorWindow
 
         Undo.FlushUndoRecordObjects();
     }
+
+    
 
     private void RecalculateWindowsPositions()
     {
@@ -664,7 +674,26 @@ public class QuestWindow : EditorWindow
         }
     }
 
-	void DrawStateBox(State state)
+    void DrawStateLinkBox(StateLink stateLink)
+    {
+        Rect header = new Rect(stateLink.position.position, new Vector3(stateLink.position.width, 20));
+
+        if (header.Contains(Event.current.mousePosition) && makingPath == true)
+        {
+            GUI.backgroundColor = Color.yellow;
+            if (Event.current.button == 0 && Event.current.type == EventType.MouseUp)
+            {
+                startPath.aimState = GUIDManager.GetStateByGuid(stateLink.stateGUID);
+                makingPath = false;
+                Repaint();
+            }
+        }
+
+        stateLink.position = GUILayout.Window(currentChain.statesLinks.IndexOf(stateLink), stateLink.position, DoStateLinkWindow, GUIDManager.GetStateByGuid(stateLink.stateGUID).description, GUILayout.Width(100), GUILayout.Height(60));   
+        GUI.backgroundColor = Color.white;
+    }
+
+    void DrawStateBox(State state)
 	{
 
         //GUI.Box(_boxPos, state.description);
@@ -764,6 +793,54 @@ public class QuestWindow : EditorWindow
 		GUILayout.EndHorizontal ();
         GUI.DragWindow();
 	}
+
+    void DoStateLinkWindow(int windowID)
+    {
+        Event evt = Event.current;
+
+        if (evt.button == 1 && evt.type == EventType.MouseDown)
+        {
+            //menuState = currentChain.states[windowID];
+            lastMousePosition = evt.mousePosition;
+            GenericMenu menu = new GenericMenu();
+            Undo.RecordObject(game, "remove link");
+            menu.AddItem(new GUIContent("Remove state link"), false, RemoveStateLink);
+            Undo.FlushUndoRecordObjects();
+            menu.ShowAsContext();
+        }
+
+        GUILayout.BeginVertical();
+        currentChain.statesLinks[windowID].chainGUID = currentChain.statesLinks[0].chainGUID;
+        currentChain.statesLinks[windowID].stateGUID = currentChain.statesLinks[0].stateGUID;
+        GUILayout.EndVertical();
+        GUI.DragWindow();
+    }
+
+    private void RemoveStateLink()
+    {
+        foreach (State s in currentChain.states)
+        {
+            List<Path> removigPathes = new List<Path>();
+            int i = 0;
+            foreach (Path p in s.pathes)
+            {
+                if (p.aimState == GUIDManager.GetStateByGuid(menuStateLink.stateGUID))
+                {
+                    removigPathes.Add(s.pathes[i]);
+                    inspectedPath = -1;
+                }
+                i++;
+            }
+
+            foreach (Path p in s.pathes.FindAll((p) => removigPathes.Contains(p)))
+            {
+                p.aimState = new State(-1);
+            }
+        }
+
+        //inspectedState = null;
+        currentChain.statesLinks.Remove(menuStateLink);
+    }
 
     private void MakeStart()
     {
@@ -870,6 +947,31 @@ public class QuestWindow : EditorWindow
     private void CreateNewState()
     {
         CreateState();
+    }
+
+    private void CreateNewStateLink()
+    {
+        CreateStateLink();
+    }
+
+    StateLink CreateStateLink()
+    {
+        List<Chain> chains = new List<Chain>();
+        foreach (ChainPack cp in game.chainPacks)
+        {
+            chains.AddRange(cp.chains);
+        }
+
+        chains.Remove(currentChain);
+
+        if (chains.Count>0)
+        {
+            StateLink link = new StateLink(chains[0]);
+            link.position = new Rect(lastMousePosition.x - link.position.width / 2, lastMousePosition.y - link.position.height / 2, link.position.width, link.position.height);
+            currentChain.statesLinks.Add(link);
+            return link;
+        }
+        return null;
     }
 
     State CreateState()

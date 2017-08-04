@@ -23,8 +23,9 @@ public class Chain
         }
     }
 	public List<State> states = new List<State>();
+    public List<StateLink> statesLinks = new List<StateLink>();
 
-	public Chain(int cGuid, int sGuid)
+    public Chain(int cGuid, int sGuid)
 	{
 		ChainGuid = cGuid;
 		name = "New chain";
