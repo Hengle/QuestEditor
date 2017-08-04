@@ -187,6 +187,7 @@ public class QuestWindow : EditorWindow
 		GUILayout.EndHorizontal();
 		p.showing = !GUILayout.Toggle (!p.showing, "hidden");
 		List<Chain> chains = new List<Chain> ();
+	
 		foreach (ChainPack pack in game.chainPacks) {
 			chains.AddRange (pack.chains);
 		}
@@ -203,7 +204,7 @@ public class QuestWindow : EditorWindow
 			if (p.activating) {
 				if (p.usableChain == null || !chains.Contains (p.usableChain)) {
 					if (chains.Count > 0) {
-						p.usableChain = chains [0]; 
+						p.usableChain = chains [0];
 					} else {
 						p.activating = false;
 					}
@@ -211,8 +212,19 @@ public class QuestWindow : EditorWindow
 			}
 
 
+
 			if (p.activating) {
+				
+
+					List<State> states = new List<State> ();
+					states.AddRange (p.usableChain.states);
+					if (p.usableState == null || !states.Contains (p.usableState)) 
+					{
+						p.usableState = states[0];
+					}
+
 				p.usableChain = chains [EditorGUILayout.Popup (chains.IndexOf (p.usableChain), chains.Select (x => x.name).ToArray ())]; 
+				p.usableState = states[EditorGUILayout.Popup (states.IndexOf (p.usableState), states.Select (x => x.description).ToArray ())]; 
 				p.manualActivationWithConditions = GUILayout.Toggle (p.manualActivationWithConditions, "with condition");
 			}
 
@@ -285,12 +297,34 @@ public class QuestWindow : EditorWindow
 
 		for(int i = 0; i< p.autoActivatedChains.Count; i++)
 		{
-			
-			if(!chains.Contains(p.autoActivatedChains.ElementAt(i).Value))
+			if(p.autoActivatedChains.ElementAt(i).Value == null)
+			{
+				if(GUIDManager.GetChainByGuid(p.autoActivatedChainsGUIDS[i].chainGuid) == null)
+				{
+						List<Chain> chains2 = new List<Chain>();
+						foreach(ChainPack cp in game.chainPacks)
+						{
+							chains2.AddRange(cp.chains);
+						}
+					if (chains2.Count > 0) {
+						p.SetAutoActivatedChain (i, chains2 [0]);
+						p.SetAutoActivatedState (i, chains2 [0].StartState);
+					} else {
+						Repaint ();
+						return;
+					}
+				}
+				else
+				{
+					p.SetAutoActivatedState (i, GUIDManager.GetChainByGuid(p.autoActivatedChainsGUIDS[i].chainGuid).StartState);	
+				}
+			}
+
+			if(!chains.Contains(GUIDManager.GetChainByStateGuid(p.autoActivatedChains.ElementAt(i).Value.stateGUID)))
 			{
 				if (chains.Count > 0) {
 					Condition pair = p.autoActivatedChains.ElementAt (i).Key;
-					p.autoActivatedChains[pair] = chains [0];
+						p.autoActivatedChains[pair] = chains [0].StartState;
 				} else 
 				{
 					removingCondition = i;
@@ -301,8 +335,23 @@ public class QuestWindow : EditorWindow
 			Condition c = p.autoActivatedChains.ElementAt (i).Key;
 			GUI.color = Color.white;
 
-            int v = EditorGUILayout.Popup(chains.IndexOf(p.autoActivatedChains[c]), chains.Select(x => x.name).ToArray());
-            p.SetAutoActivatedChain(i, chains[v]); 
+			int v = EditorGUILayout.Popup(chains.IndexOf(GUIDManager.GetChainByGuid(p.autoActivatedChainsGUIDS[i].chainGuid)), chains.Select(x => x.name).ToArray());
+			p.SetAutoActivatedChain(i, chains[v]); 
+
+			if(p.autoActivatedChainsGUIDS[i].chainGuid!=chains[v].ChainGuid)
+			{
+				p.SetAutoActivatedState (i, chains[v].states[0]);
+			}
+
+			int v2 = EditorGUILayout.Popup(GUIDManager.GetChainByGuid(p.autoActivatedChainsGUIDS[i].chainGuid).states.IndexOf(GUIDManager.GetStateByGuid(p.autoActivatedChainsGUIDS[i].stateGuid)), GUIDManager.GetChainByStateGuid(p.autoActivatedChainsGUIDS[i].stateGuid).states.Select(x => x.description).ToArray());
+
+
+			if(v2>=GUIDManager.GetChainByGuid(p.autoActivatedChainsGUIDS[i].chainGuid).states.Count || v2<0)
+			{
+				v2 = 0;
+			}
+				
+			p.SetAutoActivatedState (i, chains[v].states[v2]);
 
 			GUI.color = Color.red;
 			if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
@@ -413,6 +462,7 @@ public class QuestWindow : EditorWindow
 			currentPack = new ChainPack ();
 			game.chainPacks.Insert(0, currentPack);
 			GUI.FocusControl ("packName"+(0));
+			Repaint ();
 		}
 		GUI.color = Color.white;
 	
@@ -425,7 +475,7 @@ public class QuestWindow : EditorWindow
 			{
 				style = QuestCreatorSkin.box;
 			}
-
+				
 			Rect r = EditorGUILayout.BeginHorizontal (style);
 			GUI.SetNextControlName ("packName"+(counter-1));
 			pack.name = EditorGUILayout.TextArea (pack.name, GUILayout.Width(position.width/4-30), GUILayout.Height(15));
@@ -498,6 +548,7 @@ public class QuestWindow : EditorWindow
 		if(GUILayout.Button("new chain", GUILayout.Width(position.width/2-30), GUILayout.Height(15)))
 		{
 			currentPack.chains.Insert(0, new Chain(GUIDManager.GetChainGUID(), GUIDManager.GetStateGUID()));
+			Repaint ();
 		}
 		GUI.color = Color.white;
 
@@ -507,7 +558,11 @@ public class QuestWindow : EditorWindow
 		{
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();
-			chain.name = EditorGUILayout.TextArea (chain.name, GUILayout.Width(position.width/2-60), GUILayout.Height(15));
+			GUILayout.BeginHorizontal ();
+			chain.name = EditorGUILayout.TextArea (chain.name, GUILayout.Height(15));
+			chain.returnAfterEnd = GUILayout.Toggle (chain.returnAfterEnd, "return");
+			GUILayout.EndHorizontal ();
+
 			if(GUILayout.Button("edit", GUILayout.Width(50), GUILayout.Height(15)))
 			{
 				currentChain = chain;

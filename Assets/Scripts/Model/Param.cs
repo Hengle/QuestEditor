@@ -6,7 +6,7 @@ using System.Linq;
 [System.Serializable]
 public class Param
 {
-    public delegate void ParamActivation(Chain chain);
+	public delegate void ParamActivation(State state);
     public event ParamActivation OnParamActivation;
 
    
@@ -27,34 +27,51 @@ public class Param
 			usableChainGuid = value.ChainGuid;
 		}
 	}
-	public bool activating;
-	public bool manualActivationWithConditions = false;
-	public Condition manualUsingCondition = new Condition();
-	public Dictionary<Condition, Chain> autoActivatedChains
+	public int usableStateGuid;
+	public State usableState
 	{
 		get
 		{
-			Dictionary<Condition, Chain> ret = new Dictionary<Condition, Chain>();
+			return GUIDManager.GetStateByGuid(usableStateGuid);
+		}
+		set
+		{
+			usableStateGuid = value.stateGUID;
+		}
+	}
+
+	public bool activating;
+	public bool manualActivationWithConditions = false;
+	public Condition manualUsingCondition = new Condition();
+	public Dictionary<Condition, State> autoActivatedChains
+	{
+		get
+		{
+			Dictionary<Condition, State> ret = new Dictionary<Condition, State>();
 			foreach(ConditionChain kc in autoActivatedChainsGUIDS)
 			{
-				ret.Add (kc.c, GUIDManager.GetChainByGuid(kc.guid));
+				ret.Add (kc.c, GUIDManager.GetStateByGuid(kc.stateGuid));
 			}
 			return ret;
 		}
 		set
 		{
 			autoActivatedChainsGUIDS = new List<ConditionChain>();
-            foreach (KeyValuePair<Condition, Chain> kvp in value)
+			foreach (KeyValuePair<Condition, State> kvp in value)
 			{
-				autoActivatedChainsGUIDS.Add (new ConditionChain(kvp.Key, kvp.Value.ChainGuid));
+				autoActivatedChainsGUIDS.Add (new ConditionChain(kvp.Key, GUIDManager.GetChainByStateGuid (kvp.Value.stateGUID).ChainGuid ,kvp.Value.stateGUID));
 			}
 		}
 	}
 
     public void SetAutoActivatedChain(int id, Chain c)
     {
-        autoActivatedChainsGUIDS[id].guid = c.ChainGuid;
+		autoActivatedChainsGUIDS[id].chainGuid = c.ChainGuid;
     }
+	public void SetAutoActivatedState(int id, State s)
+	{
+		autoActivatedChainsGUIDS[id].stateGuid = s.stateGUID;
+	}
 
 	public void RemoveAutoActivatedChain(int id)
 	{
@@ -62,7 +79,7 @@ public class Param
 	}
 	public void AddAutoActivatedChain(Condition cond, Chain c)
 	{
-		autoActivatedChainsGUIDS.Add (new ConditionChain(cond, c.ChainGuid));
+		autoActivatedChainsGUIDS.Add (new ConditionChain(cond, c.ChainGuid, c.StartState.stateGUID));
 	}
 
     public List<ConditionChain> autoActivatedChainsGUIDS = new List<ConditionChain>();
@@ -85,10 +102,8 @@ public class Param
 
     private void CheckConditions()
     {
-        Debug.Log(autoActivatedChains.Count+" "+name);
-        foreach (KeyValuePair<Condition, Chain> pair in autoActivatedChains)
+		foreach (KeyValuePair<Condition, State> pair in autoActivatedChains)
         {
-            Debug.Log(pair.Key.ConditionValue);
             if (pair.Key.ConditionValue)
             {
                 OnParamActivation(pair.Value);

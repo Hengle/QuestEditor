@@ -10,6 +10,8 @@ public class ChainPlayer : MonoBehaviour
     private State waitingState = null;
     private State currentState;
 
+	private Stack<State> brokenStates = new Stack<State>();
+
     public void PlayChain(Chain chain)
     {
         ActivateState(chain.StartState);
@@ -30,7 +32,17 @@ public class ChainPlayer : MonoBehaviour
         }
     }
 
-    private void ActivateState(State startState)
+	public void ActivateStateFromParam(State startState)
+	{
+		if(GUIDManager.GetChainByStateGuid(startState.stateGUID).returnAfterEnd)
+		{
+			Debug.Log ("push "+currentState.description);
+			brokenStates.Push (currentState);
+		}
+		ActivateState (startState);
+	}
+
+	public void ActivateState(State startState)
     {
 
         currentState = startState;
@@ -61,7 +73,12 @@ public class ChainPlayer : MonoBehaviour
         }
         if (startState.pathes.Count == 0)
         {
-            waitingState = FindObjectOfType<PilePlayer>().GetChain().StartState;
+			if (brokenStates.Count > 0) {
+				State s = brokenStates.Pop ();
+				waitingState = s;
+			} else {
+				waitingState = FindObjectOfType<PilePlayer> ().GetChain ().StartState;
+			}
         }
 
         if (OnStateActivation!=null)

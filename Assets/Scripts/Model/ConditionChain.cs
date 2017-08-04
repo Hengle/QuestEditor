@@ -5,11 +5,13 @@ using UnityEngine;
 [System.Serializable]
 public class ConditionChain {
     public Condition c;
-    public int guid;
+    public int stateGuid;
+	public int chainGuid;
 
-    public ConditionChain(Condition key, int chainGuid)
+    public ConditionChain(Condition key, int chainGuid, int stateGuid)
     {
         this.c = key;
-        this.guid = chainGuid;
+		this.chainGuid = chainGuid;
+		this.stateGuid = stateGuid;
     }
 }

@@ -44,7 +44,7 @@ public class ResourceManager : MonoBehaviour {
                 p.pValue = 0;
                 if (ChainPlayer)
                 {
-                    p.OnParamActivation += ChainPlayer.PlayChain;
+				p.OnParamActivation += ChainPlayer.ActivateStateFromParam;
                 }
                 OnParamChanging.Invoke(p);
             }
@@ -71,7 +71,7 @@ public class ResourceManager : MonoBehaviour {
         {
             if (ChainPlayer)
             {
-                p.OnParamActivation -= ChainPlayer.PlayChain;
+				p.OnParamActivation -= ChainPlayer.ActivateStateFromParam;
             }
         }
     }

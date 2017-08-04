@@ -19,7 +19,7 @@ public class ItemButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         img.sprite = parameter.image;
         GetComponent<Button>().onClick.AddListener(()=>
         {
-            FindObjectOfType<ChainPlayer>().PlayChain(parameter.usableChain);
+				FindObjectOfType<ChainPlayer>().ActivateStateFromParam(parameter.usableState);
         });
         UpdateValue();
     }
