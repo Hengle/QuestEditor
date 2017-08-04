@@ -222,13 +222,22 @@ public class QuestWindow : EditorWindow
 					{
 						p.usableState = states[0];
 					}
+                p.manualActivationWithState = GUILayout.Toggle(p.manualActivationWithState, "with state");
+                p.withChange = GUILayout.Toggle(p.withChange, "with change");
+                if (p.manualActivationWithState)
+                {
+                    p.usableChain = chains[EditorGUILayout.Popup(chains.IndexOf(p.usableChain), chains.Select(x => x.name).ToArray())];
+                    p.usableState = states[EditorGUILayout.Popup(states.IndexOf(p.usableState), states.Select(x => x.description).ToArray())];
+                }
 
-				p.usableChain = chains [EditorGUILayout.Popup (chains.IndexOf (p.usableChain), chains.Select (x => x.name).ToArray ())]; 
-				p.usableState = states[EditorGUILayout.Popup (states.IndexOf (p.usableState), states.Select (x => x.description).ToArray ())]; 
-				p.manualActivationWithConditions = GUILayout.Toggle (p.manualActivationWithConditions, "with condition");
-			}
+                if (p.withChange)
+                {
+                    DrawChanges(p.manualUsingChange);
+                }
+                
+            }
 
-			if (p.activating && p.manualActivationWithConditions) 
+			if (p.activating && (p.manualActivationWithState || p.withChange)) 
 			{
 				EditorGUILayout.BeginHorizontal ();
                 GUI.backgroundColor = Color.white;
@@ -284,15 +293,24 @@ public class QuestWindow : EditorWindow
 				}
 			}
 		}
-		GUI.color = Color.green;
-		if (GUILayout.Button ("add auto action")) {
 
+        GUILayout.BeginHorizontal();
+		GUI.color = Color.green;
+		if (GUILayout.Button ("auto state")) {
 			if(chains.Count>0)
 			{
 				p.AddAutoActivatedChain (new Condition(), chains[0]);
 			}
 		};
+        GUI.color = Color.cyan;
+        if (GUILayout.Button("auto change"))
+        {
+            p.autoActivatedChangesGUIDS.Add(new ConditionChange(new Condition()));
+        }
+        GUI.color = Color.white;
+        GUILayout.EndHorizontal();
 
+        ///
 		int removingCondition = -1;
 
 		for(int i = 0; i< p.autoActivatedChains.Count; i++)
@@ -422,7 +440,50 @@ public class QuestWindow : EditorWindow
 		{
 			p.RemoveAutoActivatedChain  (removingCondition);
 		}
-		GUI.color = Color.white;
+        ///
+        GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
+
+        ConditionChange removingConditionChange = null;
+        foreach (ConditionChange conditionChange in p.autoActivatedChangesGUIDS)
+        {
+            GUILayout.BeginHorizontal();
+            DrawCondition(conditionChange.condition);
+            GUI.color = Color.green;
+            if (GUILayout.Button((Texture2D)Resources.Load("Icons/cancel") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
+            {
+                conditionChange.changes.Add(new ParamChanges(p));
+            }
+            GUI.color = Color.red;
+            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(20)))
+            {
+                removingConditionChange = conditionChange;
+            }
+            GUI.color = Color.white;
+            GUILayout.EndHorizontal();
+            ParamChanges removingChanger = null;
+
+            foreach (ParamChanges c in conditionChange.changes)
+            {
+                GUILayout.BeginHorizontal();
+                DrawChanges(c);
+                GUI.color = Color.red;
+                if (GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
+                {
+                    removingChanger = c;
+                }
+                GUILayout.EndHorizontal();
+            }
+            if (removingChanger!=null)
+            {
+                conditionChange.changes.Remove(removingChanger);
+            }
+        }
+
+        if (removingConditionChange!=null)
+        {
+            p.autoActivatedChangesGUIDS.Remove(removingConditionChange);
+        }
+        GUI.color = Color.white;
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();
 		GUILayout.EndScrollView ();
@@ -1057,7 +1118,8 @@ public class QuestWindow : EditorWindow
 		GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
 
 		DrawChanges (inspectedState.pathes[inspectedPath]);
-
+        
+        GUI.color = Color.white;
         GUILayout.EndVertical();
     }
 
@@ -1171,7 +1233,75 @@ public class QuestWindow : EditorWindow
 
 	}
 
-	private void DrawChanges(Path path)
+    private void DrawCondition(Condition condition)
+    {
+        GUILayout.BeginVertical();
+        EditorGUILayout.BeginHorizontal();
+
+        GUI.backgroundColor = Color.white;
+        try
+        {
+            ExpressionSolver.CalculateBool(condition.conditionString, condition.Parameters);
+        }
+        catch
+        {
+            GUI.color = Color.red;
+        }
+
+        condition.conditionString = EditorGUILayout.TextArea(condition.conditionString, GUILayout.Width((position.width - 40) / 3 - 80));
+
+        GUI.color = Color.yellow;
+        if (GUILayout.Button((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20)))
+        {
+            if (game.parameters.Count > 0)
+            {
+                condition.AddParam(game.parameters[0]);
+            }
+        }
+
+        GUI.color = Color.white;
+        EditorGUILayout.EndHorizontal();
+
+        Param removingParam = null;
+
+        for (int i = 0; i < condition.Parameters.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("[p" + i + "]", GUILayout.Width(35));
+
+            if (!game.parameters.Contains(condition.Parameters[i]))
+            {
+                if (game.parameters.Count > 0)
+                {
+                    condition.Parameters[i] = game.parameters[0];
+                }
+                else
+                {
+                    removingParam = condition.Parameters[i];
+                    Repaint();
+                    continue;
+                }
+            }
+            condition.setParam(i, game.parameters[EditorGUILayout.Popup(game.parameters.IndexOf(condition.Parameters[i]), game.parameters.Select(x => x.name).ToArray())]);
+
+
+            GUI.color = Color.red;
+            if (GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
+            {
+                removingParam = condition.Parameters[i];
+            }
+            GUI.color = Color.white;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        if (removingParam != null)
+        {
+            condition.RemoveParam(removingParam);
+        }
+        GUILayout.EndVertical();
+    }
+
+    private void DrawChanges(Path path)
 	{
 		GUILayout.BeginHorizontal ();
 		GUILayout.FlexibleSpace ();
@@ -1268,6 +1398,96 @@ public class QuestWindow : EditorWindow
 			path.changes.Remove (removingChanger);
 		}
 	}
+
+    private void DrawChanges(ParamChanges change)
+    {
+        GUILayout.BeginVertical();
+        GUI.color = Color.white;
+
+            EditorGUILayout.BeginHorizontal();
+
+            if (!game.parameters.Contains(change.aimParam))
+            {
+                if (game.parameters.Count > 0)
+                {
+                    change.aimParam = game.parameters[0];
+                }
+                else
+                {
+                    //removingChanger = path.changes[i];
+                    EditorGUILayout.EndHorizontal();
+                    return;
+                }
+            }
+            change.aimParam = game.parameters[EditorGUILayout.Popup(game.parameters.IndexOf(change.aimParam), game.parameters.Select(x => x.name).ToArray())];
+
+            GUILayout.Label("=");
+
+            GUI.backgroundColor = Color.white;
+            try
+            {
+                ExpressionSolver.CalculateFloat(change.changeString, change.parameters);
+            }
+            catch
+            {
+                GUI.color = Color.red;
+            }
+
+            change.changeString = EditorGUILayout.TextArea(change.changeString, GUILayout.Width(58));
+            GUI.color = Color.yellow;
+            if (GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
+            {
+                if (game.parameters.Count > 0)
+                {
+                    change.AddParam(game.parameters[0]);
+                }
+            }
+            GUI.color = Color.white;
+
+            Param removingParam = null;
+            EditorGUILayout.EndHorizontal();
+
+            if (change.parameters == null)
+            {
+                change = new ParamChanges(change.aimParam);
+            }
+
+        for (int j = 0; j < change.parameters.Count; j++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("[p" + j + "]", GUILayout.Width(35));
+
+                if (!game.parameters.Contains(change.parameters[j]))
+                {
+                    if (game.parameters.Count > 0)
+                    {
+                        change.setParam(game.parameters[0], j);
+                    }
+                    else
+                    {
+                        removingParam = change.parameters[j];
+                        continue;
+                    }
+                }
+
+                int v = EditorGUILayout.Popup(game.parameters.IndexOf(change.parameters[j]), game.parameters.Select(x => x.name).ToArray());
+                change.setParam(game.parameters[v], j);
+                GUI.color = Color.red;
+                if (GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
+                {
+                    removingParam = change.parameters[j];
+                }
+                GUI.color = Color.white;
+                EditorGUILayout.EndHorizontal();
+            }
+
+            if (removingParam != null)
+            {
+                change.RemoveParam(removingParam);
+            }
+            GUI.color = Color.white;
+        GUILayout.EndVertical();
+    }
 
     void DrawNodeCurve(Rect start, Rect end, Color c)
     {

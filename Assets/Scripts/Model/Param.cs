@@ -15,6 +15,8 @@ public class Param
 	public string tags;
 	public string description;
 	public Sprite image;
+    public ParamChanges manualUsingChange;
+    public bool withChange;
 	public int usableChainGuid;
 	public Chain usableChain
 	{
@@ -41,8 +43,10 @@ public class Param
 	}
 
 	public bool activating;
-	public bool manualActivationWithConditions = false;
+	public bool manualActivationWithState = false;
 	public Condition manualUsingCondition = new Condition();
+
+
 	public Dictionary<Condition, State> autoActivatedChains
 	{
 		get
@@ -83,8 +87,10 @@ public class Param
 	}
 
     public List<ConditionChain> autoActivatedChainsGUIDS = new List<ConditionChain>();
-	//use guid
-	public Vector2 scrollPosition;
+    public List<ConditionChange> autoActivatedChangesGUIDS = new List<ConditionChange>();
+
+    //use guid
+    public Vector2 scrollPosition;
 	public int paramGUID;
     public float pValue;
     public float PValue

@@ -30,7 +30,7 @@ public class ItemButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         GetComponent<Button>().interactable = parameter.activating;
 
-        if (parameter.manualActivationWithConditions && parameter.activating)
+        if ((parameter.manualActivationWithState||parameter.withChange) && parameter.activating)
         {
             if (ExpressionSolver.CalculateBool(parameter.manualUsingCondition.conditionString, parameter.manualUsingCondition.Parameters))
             {
