@@ -11,10 +11,16 @@ public class ChainPack {
 	[SerializeField]
 	public string name;
     public string tags;
+	public int ChainPackGUID;
 
-    public ChainPack()
+	public ChainPack(int guid)
 	{
 		name = "New pack";
         tags = "";
+		ChainPackGUID = guid;
+	}
+
+	public ChainPack()
+	{
 	}
 }

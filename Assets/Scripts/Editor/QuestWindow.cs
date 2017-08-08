@@ -31,8 +31,7 @@ public class QuestWindow : EditorWindow
 	Chain currentChain;
 	ChainPack currentPack;
 	ReorderableList packList;
-	string[] toolbarStrings = new string[] {"Packs", "Chains"};
-	int toolbarInt = 0, selectedChain = 0;
+	int selectedChain = 0;
 	Vector2 packsScrollPosition = Vector2.zero;
 	Vector2 chainsScrollPosition = Vector2.zero;
 	EditorMode chainEditorMode = EditorMode.packs;
@@ -229,10 +228,31 @@ public class QuestWindow : EditorWindow
                     p.usableChain = chains[EditorGUILayout.Popup(chains.IndexOf(p.usableChain), chains.Select(x => x.name).ToArray())];
                     p.usableState = states[EditorGUILayout.Popup(states.IndexOf(p.usableState), states.Select(x => x.description).ToArray())];
                 }
+					
 
                 if (p.withChange)
-                {
-                    DrawChanges(p.manualUsingChange);
+				{
+					if(GUILayout.Button("add change"))
+					{
+						p.manualUsingChange.Add (new ParamChanges(p));
+					}
+
+					ParamChanges deletingPch = null;
+					foreach(ParamChanges pch in p.manualUsingChange){
+						GUILayout.BeginHorizontal ();
+                    	DrawChanges(pch);
+						GUI.color = Color.red;
+						if(GUILayout.Button("", GUILayout.Width(15), GUILayout.Height(15)))
+						{
+							deletingPch = pch;
+						}
+						GUI.color = Color.white;
+						GUILayout.EndHorizontal ();
+					}
+					if(deletingPch!=null)
+					{
+						p.manualUsingChange.Remove (deletingPch);
+					}
                 }
                 
             }
@@ -520,7 +540,7 @@ public class QuestWindow : EditorWindow
 
         if (GUILayout.Button("new pack", GUILayout.Width(position.width/2-30), GUILayout.Height(15)))
 		{
-			currentPack = new ChainPack ();
+			currentPack = new ChainPack (GUIDManager.getChainPackGuid ());
 			game.chainPacks.Insert(0, currentPack);
 			GUI.FocusControl ("packName"+(0));
 			Repaint ();
@@ -1114,11 +1134,16 @@ public class QuestWindow : EditorWindow
  
             
    
-
-		GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
-
+		if(inspectedState.pathes[inspectedPath].condition.Parameters.Count>0)
+		{
+			GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
+		}
 		DrawChanges (inspectedState.pathes[inspectedPath]);
-        
+		if(inspectedState.pathes[inspectedPath].changes.Count>0)
+		{
+			GUILayout.Box("", new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1) });
+		}
+		DrawPileChangers (inspectedState.pathes[inspectedPath]);
         GUI.color = Color.white;
         GUILayout.EndVertical();
     }
@@ -1397,6 +1422,44 @@ public class QuestWindow : EditorWindow
 		{
 			path.changes.Remove (removingChanger);
 		}
+	}
+
+	private void DrawPileChangers (Path path)
+	{
+		GUI.color = new Color (0.8f, 0.5f, 0.8f);
+		GUILayout.BeginHorizontal ();
+		GUILayout.FlexibleSpace ();
+		if (GUILayout.Button ((Texture2D)Resources.Load("Icons/add") as Texture2D, GUILayout.Width(20), GUILayout.Height(20))) 
+		{
+			path.pileChangers.Add (new PileChanger(game.chainPacks[0]));
+		}
+		GUILayout.EndHorizontal ();
+		PileChanger removingChanger = null;
+		GUI.color = Color.white;
+		foreach(PileChanger pch in path.pileChangers)
+		{
+			GUILayout.BeginHorizontal ();
+			pch.chainPileGUID = game.chainPacks[EditorGUILayout.Popup (game.chainPacks.IndexOf(GUIDManager.getChainPackByGuid(pch.chainPileGUID)), game.chainPacks.Select(x => x.name).ToArray())].ChainPackGUID;
+			GUI.color = Color.red;
+			if(GUILayout.Button("", GUILayout.Height(15), GUILayout.Width(15)))
+			{
+				removingChanger = pch;
+			}
+			GUI.color = Color.white;
+			GUILayout.EndHorizontal ();
+			pch.changeType = (PileChanger.ChangeType)EditorGUILayout.Popup ((int)pch.changeType, Enum.GetNames(typeof(PileChanger.ChangeType)));
+			pch.aim = (PileChanger.PileChangeAim)EditorGUILayout.Popup ((int)pch.aim, Enum.GetNames(typeof(PileChanger.PileChangeAim)));
+			pch.withRepeat = GUILayout.Toggle (pch.withRepeat, "dublicates");
+			GUILayout.Space (2);
+		}
+			
+		if(removingChanger!=null)
+		{
+			Debug.Log (")))))");
+			path.pileChangers.Remove (removingChanger);
+			Repaint ();
+		}
+		GUI.color = Color.white;
 	}
 
     private void DrawChanges(ParamChanges change)

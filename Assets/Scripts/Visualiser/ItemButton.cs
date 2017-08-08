@@ -19,10 +19,25 @@ public class ItemButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         img.sprite = parameter.image;
         GetComponent<Button>().onClick.AddListener(()=>
         {
-				FindObjectOfType<ChainPlayer>().ActivateStateFromParam(parameter.usableState);
+				ActivateItem();
         });
         UpdateValue();
     }
+
+	public void ActivateItem(){
+		if(parameter.manualActivationWithState)
+		{
+			FindObjectOfType<ChainPlayer>().ActivateStateFromParam(parameter.usableState);
+		}
+		if(parameter.withChange)
+		{
+			foreach(ParamChanges pch in parameter.manualUsingChange)
+			{
+				FindObjectOfType<ResourceManager>().SetParam(pch.aimParam.name, pch.changeString, pch.parameters, false);
+				GetComponentInParent<ItemsVisualizer> ().CheckButtons ();
+			}
+		}
+	}
 
     public void UpdateValue()
     {

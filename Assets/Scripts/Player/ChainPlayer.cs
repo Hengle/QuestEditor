@@ -30,6 +30,11 @@ public class ChainPlayer : MonoBehaviour
         {
             ch.aimParam.PValue = ch.aimParam.PValue;
         }
+
+		foreach(PileChanger pch in p.pileChangers)
+		{
+			GetComponent<PilePlayer> ().ApplyChanger (pch);
+		}
     }
 
 	public void ActivateStateFromParam(State startState)

@@ -19,6 +19,14 @@ public class ItemsVisualizer : MonoBehaviour {
         res.OnParamChanging += ChangingParam;
     }
 
+	public void CheckButtons()
+	{
+		foreach(ItemButton ib in GetComponentsInChildren<ItemButton>())
+		{
+			ChangingParam (ib.parameter);
+		}
+	}
+
     private void ChangingParam(Param p)
     {
         if (p.tags.Length>0)
@@ -39,8 +47,10 @@ public class ItemsVisualizer : MonoBehaviour {
 
         foreach (ItemButton ib in GetComponentsInChildren<ItemButton>())
         {
+			//Debug.Log (ib.parameter.name+" "+p.name);
             if (ib.parameter == p)
             {
+				//Debug.Log (p.PValue+" "+ib.parameter.PValue);
                 ib.UpdateValue();
                 return;
             }

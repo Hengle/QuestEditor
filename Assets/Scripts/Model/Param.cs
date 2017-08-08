@@ -9,13 +9,13 @@ public class Param
 	public delegate void ParamActivation(State state);
     public event ParamActivation OnParamActivation;
 
-   
+	//public ChainPack 
     public string name;
 	public bool showing;
 	public string tags;
 	public string description;
 	public Sprite image;
-    public ParamChanges manualUsingChange;
+	public List<ParamChanges> manualUsingChange = new List<ParamChanges>();
     public bool withChange;
 	public int usableChainGuid;
 	public Chain usableChain

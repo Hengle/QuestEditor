@@ -17,6 +17,11 @@ public class PilePlayer : MonoBehaviour
         chains = new Queue<Chain>(chains.ToList().OrderBy(a => Guid.NewGuid()).ToList());
     }
 
+	public void ShuffleDrop()
+	{
+		droped = new List<Chain>(droped.OrderBy(a => Guid.NewGuid()).ToList());
+	}
+
     public void Init(bool shufflePileAfterEnd)
     {
         shuffleAfterEnding = shufflePileAfterEnd;
@@ -58,4 +63,110 @@ public class PilePlayer : MonoBehaviour
         droped.Add(c);
         return c;
     }
+
+	public void ApplyChanger (PileChanger pileChanger)
+	{
+		switch(pileChanger.changeType)
+		{
+		case PileChanger.ChangeType.Shuffle:
+			Shuffle ();
+				break;
+		case PileChanger.ChangeType.Remove:
+			switch(pileChanger.aim){
+			case PileChanger.PileChangeAim.Drop:
+					if (!pileChanger.withRepeat) {
+						List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+						addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+						droped.RemoveAll (c=>addingChains.Contains(c));
+						ShuffleDrop ();
+					} 
+					else 
+					{
+						droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+						ShuffleDrop ();
+					}
+					break;
+				case PileChanger.PileChangeAim.Pile:
+						if (!pileChanger.withRepeat) {
+							List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+							Shuffle();
+						} 
+						else 
+						{
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
+							ShuffleDrop ();
+						}
+					break;
+				case PileChanger.PileChangeAim.Both:
+						if (!pileChanger.withRepeat) {
+							List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+							addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+							addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					droped.RemoveAll (c=>addingChains.Contains(c));
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+							Shuffle();
+							ShuffleDrop();
+						} 
+						else 
+						{
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
+							ShuffleDrop ();
+					droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+							ShuffleDrop ();
+						}
+					break;
+			}
+			break;
+		case PileChanger.ChangeType.Add:
+			switch(pileChanger.aim){
+			case PileChanger.PileChangeAim.Drop:
+				if (!pileChanger.withRepeat) {
+					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					droped.RemoveAll (c=>addingChains.Contains(c));
+					ShuffleDrop ();
+				} 
+				else 
+				{
+					droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					ShuffleDrop ();
+				}
+				break;
+			case PileChanger.PileChangeAim.Pile:
+				if (!pileChanger.withRepeat) {
+					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+					Shuffle();
+				} 
+				else 
+				{
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
+					ShuffleDrop ();
+				}
+				break;
+			case PileChanger.PileChangeAim.Both:
+				if (!pileChanger.withRepeat) {
+					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					droped.RemoveAll (c=>addingChains.Contains(c));
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+					Shuffle();
+					ShuffleDrop();
+				} 
+				else 
+				{
+					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
+					ShuffleDrop ();
+					droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					ShuffleDrop ();
+				}
+				break;
+			}
+			break;
+		}
+	}
 }

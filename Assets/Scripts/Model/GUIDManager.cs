@@ -29,6 +29,31 @@ public class GUIDManager
 		return null;
 	}
 
+	public static int getChainPackGuid ()
+	{
+		int r = UnityEngine.Random.Range(0,999999);
+		foreach(ChainPack cp in inspectedgame.chainPacks)
+		{
+			if(r == cp.ChainPackGUID)
+			{
+				return getChainPackGuid ();
+			}
+		}
+		return r;
+	}
+
+	public static ChainPack getChainPackByGuid(int guid)
+	{
+		foreach(ChainPack cp in inspectedgame.chainPacks)
+		{
+			if(guid == cp.ChainPackGUID)
+			{
+				return cp;
+			}
+		}
+		return null;
+	}
+
     public static int GetStateGUID()
     {
         int r = UnityEngine.Random.Range(0,999999);

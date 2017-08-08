@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 [System.Serializable]
 public class ParamChanges
@@ -7,15 +8,15 @@ public class ParamChanges
     {
         get
         {   
-            return  GUIDManager.GetItemByGuid(aimParamGui);
+            return  GUIDManager.GetItemByGuid(aimParamGuid);
         }
         set
         {
-            aimParamGui = value.paramGUID;
+            aimParamGuid = value.paramGUID;
         } 
     }
 
-    public int aimParamGui;
+    public int aimParamGuid;
 	public List<Param> parameters
 	{
 		get

@@ -24,10 +24,25 @@ public class ResourceManager : MonoBehaviour {
         }
     }
 
-    public void SetParam(string name, float value)
+	public void SetParam(string name, float value, bool check = true)
     {
-        parameters.First(x => x.name == name).PValue = value;
-        OnParamChanging.Invoke(parameters.First(x => x.name == name));
+		if(check){
+			parameters.First(x => x.name == name).PValue = value;
+		}
+		else{
+			parameters.First(x => x.name == name).pValue = value;
+		}
+		foreach(ConditionChange pch in parameters.First(x => x.name == name).autoActivatedChangesGUIDS)
+		{
+			if(ExpressionSolver.CalculateBool(pch.condition.conditionString, pch.condition.Parameters))
+			{
+				foreach(ParamChanges pcha in pch.changes)
+				{
+					SetParam (pcha.aimParam.name, pcha.changeString, pcha.parameters, false);	
+				}
+			}
+		}
+		OnParamChanging.Invoke(parameters.First(x => x.name == name));
     }
 
     public void CheckParam(string name)
@@ -49,15 +64,13 @@ public class ResourceManager : MonoBehaviour {
                 OnParamChanging.Invoke(p);
             }
     }
+		
 
-    public void SetParam(string name, string evaluationString, List<Param> evaluationParameters = null)
+	public void SetParam(string name, string evaluationString, List<Param> evaluationParameters = null, bool check = true)
     {
-
         float value = 0;
         value = ExpressionSolver.CalculateFloat(evaluationString, evaluationParameters);
-
-        parameters.First(x => x.name == name).PValue = value;
-        OnParamChanging.Invoke(parameters.First(x => x.name == name));
+		SetParam (name, value, check);
     }
 
     public float GetParam(string name)
