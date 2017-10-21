@@ -29,7 +29,9 @@ public class PilePlayer : MonoBehaviour
 
     public void Add(ChainPack pack)
     {
+		Debug.Log (chains.Count+"/"+(chains.Count+droped.Count));
         Add(pack.chains);
+		Debug.Log (chains.Count+"/"+(chains.Count+droped.Count));
     }
 
     public void Add(Chain ch)
@@ -125,25 +127,36 @@ public class PilePlayer : MonoBehaviour
 				if (!pileChanger.withRepeat) {
 					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
 					addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
-					droped.RemoveAll (c=>addingChains.Contains(c));
+					droped.AddRange (addingChains);
 					ShuffleDrop ();
 				} 
 				else 
 				{
-					droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					droped.AddRange (addingChains);
 					ShuffleDrop ();
 				}
 				break;
 			case PileChanger.PileChangeAim.Pile:
 				if (!pileChanger.withRepeat) {
+					Debug.Log (GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).name);
 					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					Debug.Log (addingChains.Count);
+
 					addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
-					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+
+					Debug.Log (addingChains.Count);
+					List<Chain> ch = chains.ToList ();
+					ch.AddRange (addingChains);
+					chains = new Queue<Chain>(ch);
 					Shuffle();
 				} 
 				else 
 				{
-					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
+					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
+					List<Chain> ch = chains.ToList ();
+					ch.AddRange (addingChains);
+					chains = new Queue<Chain>(ch);
 					ShuffleDrop ();
 				}
 				break;
@@ -152,16 +165,29 @@ public class PilePlayer : MonoBehaviour
 					List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;
 					addingChains.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
 					addingChains.RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
-					droped.RemoveAll (c=>addingChains.Contains(c));
-					chains = new Queue<Chain>(chains.ToList().RemoveAll (c=>addingChains.Contains(c)));
+					
+					int chainsNumber = Mathf.CeilToInt((addingChains.Count + chains.Count)/(chains.Count+droped.Count));
+					addingChains = new List<Chain>(addingChains.OrderBy(a => Guid.NewGuid()).ToList());
+						
+					droped.AddRange (addingChains.GetRange(chainsNumber, addingChains.Count-chainsNumber));
+					List<Chain> ch = chains.ToList ();
+					ch.AddRange (addingChains.GetRange(0,chainsNumber));
+					chains = new Queue<Chain>(ch);
 					Shuffle();
 					ShuffleDrop();
 				} 
 				else 
 				{
-					chains = new Queue<Chain>(chains.ToList().RemoveAll (c => chains.ToList().FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c)));
-					ShuffleDrop ();
-					droped.RemoveAll (c => droped.FindAll (dc => dc.ChainGuid == c.ChainGuid).Contains(c));
+							List<Chain> addingChains = GUIDManager.getChainPackByGuid (pileChanger.chainPileGUID).chains;	
+									int chainsNumber = Mathf.CeilToInt((addingChains.Count + chains.Count)/(chains.Count+droped.Count));
+									addingChains = new List<Chain>(addingChains.OrderBy(a => Guid.NewGuid()).ToList());
+					List<Chain> ch = chains.ToList ();
+					ch.AddRange (addingChains.GetRange(0,chainsNumber));
+					chains = new Queue<Chain>(ch);
+
+					droped.AddRange(addingChains.GetRange(chainsNumber, addingChains.Count-chainsNumber));
+					Shuffle ();
+					
 					ShuffleDrop ();
 				}
 				break;

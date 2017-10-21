@@ -24,8 +24,6 @@ public class ChainPlayer : MonoBehaviour
             FindObjectOfType<ResourceManager>().SetParam(ch.aimParam.name, ch.changeString, ch.parameters);
         }
 
-        ActivateState(p.aimState);
-
         foreach (ParamChanges ch in p.changes)
         {
             ch.aimParam.PValue = ch.aimParam.PValue;
@@ -33,8 +31,11 @@ public class ChainPlayer : MonoBehaviour
 
 		foreach(PileChanger pch in p.pileChangers)
 		{
+			
 			GetComponent<PilePlayer> ().ApplyChanger (pch);
 		}
+
+		ActivateState(p.aimState);
     }
 
 	public void ActivateStateFromParam(State startState)
@@ -51,12 +52,17 @@ public class ChainPlayer : MonoBehaviour
     {
 
         currentState = startState;
+
+		if(currentState == null)
+		{
+			ActivateState(GetComponent<PilePlayer> ().GetChain ().StartState);
+			return;
+		}
+
         foreach(Path c in startState.pathes)
         {
             if (c.auto)
             {
-                Debug.Log("___");
-                Debug.Log(c.condition.conditionString);
                 foreach (Param p in c.condition.Parameters)
                 {
                     Debug.Log(p.PValue);
